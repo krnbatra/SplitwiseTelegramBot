@@ -1,11 +1,12 @@
 import logging
 
+from functools import wraps
 from splitwise import Splitwise
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, ConversationHandler
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, ConversationHandler, MessageHandler, Filters
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ChatAction
 
 from config import BOT_TOKEN, CONSUMER_KEY, CONSUMER_SECRET, OAUTH_TOKEN, OAUTH_TOKEN_SECRET
-from commands import *
+from commands import HELP, LIST_EXPENSE, SETTLE_EXPENESE, CREATE_EXPENSE, GET_NOTIFICATIONS
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -18,6 +19,16 @@ commands = {
     LIST_EXPENSE   : 'List expenses from your Splitwise account',
     SETTLE_EXPENESE : 'Settle expenses in your Splitwise account'
 }
+
+def send_typing_action(func):
+    """Sends typing action while processing func command."""
+
+    @wraps(func)
+    def command_func(update, context, *args, **kwargs):
+        context.bot.send_chat_action(chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
+        return func(update, context,  *args, **kwargs)
+
+    return command_func
 
 def initialize_bot(update):
     ''' initialze the splitwise object '''
@@ -37,6 +48,7 @@ def help_callback(update, context):
         help_text += commands[command] + '\n'
     update.message.reply_text(help_text)  # send the generated help page
 
+@send_typing_action
 def list_expense_callback(update, context):
     initialize_bot(update)
     lend_output = 'OWES YOU:\n'
@@ -45,9 +57,6 @@ def list_expense_callback(update, context):
     for friend in friends:        
         balances = friend.getBalances()
         if len(balances) > 0:
-            print(friend.getFirstName(), friend.getLastName(), end = ' ')
-            assert len(balances) == 1
-            # output = f'{friend.getFirstName} {friend.getLastName()}'
             balance = float(balances[0].getAmount())
             if balance > 0:
                 lend_output += f'\t\t{friend.getFirstName()} {friend.getLastName()}: ₹{balance}\n'
@@ -56,19 +65,73 @@ def list_expense_callback(update, context):
     output = lend_output + '\n\n' + borrow_output
     update.message.reply_text(output)
 
+def get_keyboard_layout(context):
+    friends = splitwise_object.getFriends()
+    keyboard = []
+    row = []
+    for friend in friends:
+        balances = friend.getBalances()
+        if len(balances) > 0 and float(balances[0].getAmount()) < 0:
+            name = f'{friend.getFirstName()}  {friend.getLastName()}'
+            row.append(InlineKeyboardButton(name, callback_data=friend.getId()))
+            if len(row) == 2:
+                keyboard.append(row)
+                row = []
+    keyboard.append(row)
+    return keyboard
+
+def settle_expense_callback(update, context):
+    initialize_bot(update)
+    reply_markup = InlineKeyboardMarkup(get_keyboard_layout(context))
+    update.message.reply_text(
+        'Settle with',
+        reply_markup=reply_markup
+    )
+
 def error_callback(update, context):
     """Log Errors caused by Updates."""
-    logger.warning('Update "%s" caused error "%s"', update, context.error) 
+    logger.warning('Update "%s" caused error "%s"', update, context.error)
+
+def get_notifications_callback(update, context):
+    initialize_bot(update)
+    print(splitwise_object.getNotifications())
+
+def unknown_callback(update, context):
+    update.message.reply_text(text="Sorry, I didn't understand that command.")
 
 def main():
     updater = Updater(BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler(HELP, help_callback))
     dispatcher.add_handler(CommandHandler(LIST_EXPENSE, list_expense_callback))
+    # conv_handler = ConversationHandler(
+    #     entry_points=[CommandHandler('settle_expense', settle_expense)],
+    #     states={
+    #         PAYEE: [CallbackQueryHandler(get_payee)],
+    #         CONFIRM: [
+    #                     CallbackQueryHandler(create_settle, pattern='^yes$'),
+    #                     CallbackQueryHandler(no_settlement_done, pattern='^no$')
+    #                  ]
+    #     },
+    #     fallbacks=[CommandHandler('settle_expense', settle_expense)]
+    # )
+    
+    # dispatcher.add_handler(conv_handler)
+    # dispatcher.add_handler(CommandHandler(GET_NOTIFICATIONS, get_notifications_callback))
+    dispatcher.add_handler(CommandHandler(SETTLE_EXPENESE, settle_expense_callback))
 
+    # on noncommand i.e message - echo the message on Telegram
+    dispatcher.add_handler(MessageHandler(Filters.command, unknown_callback))
+    
+    # log all errors
     dispatcher.add_error_handler(error_callback)
 
     updater.start_polling()
+
+    # Run the bot until you press Ctrl-C or the process receives SIGINT,
+    # SIGTERM or SIGABRT. This should be used most of the time, since
+    # start_polling() is non-blocking and will stop the bot gracefully.
+    updater.idle()
 
 if __name__ == '__main__':
     main()
