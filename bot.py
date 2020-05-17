@@ -43,26 +43,37 @@ def initialize_bot(update):
 
 def help_callback(update, context):
     help_text = 'The following commands are available: \n'
-    for command in commands:
-        help_text += '" + command + ": '
-        help_text += commands[command] + '\n'
+    help_text += ''.join([f"{command}: {commands[command]}\n" for command in commands])
     update.message.reply_text(help_text)  # send the generated help page
+
+def _get_lend_expenses(friends_with_expenses):
+    lend_output = 'OWES YOU:\n'
+    lend_output += ''.join([f'\t\t{friend.getFirstName()} {friend.getLastName()}: ₹{friend.getBalances()[0].getAmount()}\n'
+                            for friend in friends_with_expenses if float(friend.getBalances()[0].getAmount()) > 0])
+    logger.debug(lend_output)
+    return lend_output
+
+def _get_borrowed_expenses(friends_with_expenses):
+    borrow_output = 'YOU OWE:\n'
+    borrow_output += ''.join([f'\t\t{friend.getFirstName()} {friend.getLastName()}: ₹{friend.getBalances()[0].getAmount()}\n'
+                            for friend in friends_with_expenses if float(friend.getBalances()[0].getAmount()) < 0])
+    logger.debug(borrow_output)
+    return borrow_output
+
+def _get_friends_with_expenses():
+    friends_with_expenses = [friend for friend in splitwise_object.getFriends() if len(friend.getBalances()) > 0]
+    logger.debug(friends_with_expenses)
+    return friends_with_expenses
+
+def _get_active_expenses_string():
+    friends_with_expenses = _get_friends_with_expenses()
+    output = _get_lend_expenses(friends_with_expenses) + '\n\n' + _get_borrowed_expenses(friends_with_expenses)
+    return output
 
 @send_typing_action
 def list_expense_callback(update, context):
     initialize_bot(update)
-    lend_output = 'OWES YOU:\n'
-    borrow_output = 'YOU OWE:\n'
-    friends = splitwise_object.getFriends()
-    for friend in friends:        
-        balances = friend.getBalances()
-        if len(balances) > 0:
-            balance = float(balances[0].getAmount())
-            if balance > 0:
-                lend_output += f'\t\t{friend.getFirstName()} {friend.getLastName()}: ₹{balance}\n'
-            else:
-                borrow_output += f'\t\t{friend.getFirstName()} {friend.getLastName()}: ₹{abs(balance)}\n'
-    output = lend_output + '\n\n' + borrow_output
+    output = _get_active_expenses_string()
     update.message.reply_text(output)
 
 def get_keyboard_layout(context):
