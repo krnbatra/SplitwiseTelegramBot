@@ -6,8 +6,8 @@ from splitwise.expense import Expense
 from splitwise.user import ExpenseUser
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ChatAction, ReplyKeyboardRemove
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, ConversationHandler, MessageHandler, Filters
-from config import BOT_TOKEN, CONSUMER_KEY, CONSUMER_SECRET
-from commands import HELP, LIST_EXPENSE, SETTLE_EXPENESE, CREATE_EXPENSE, GET_NOTIFICATIONS, START, CONNECT
+from config import BOT_TOKEN, CONSUMER_KEY, CONSUMER_SECRET, OAUTH_TOKEN, OAUTH_TOKEN_SECRET
+from commands import HELP, LIST_EXPENSE, SETTLE_EXPENESE, CREATE_EXPENSE, GET_NOTIFICATIONS, START, CONNECT, CANCEL
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 splitwise_object = Splitwise(CONSUMER_KEY, CONSUMER_SECRET)
 
+SETTLE_WITH_FRIEND = 'settle_with_friend'
+
 commands = {
     LIST_EXPENSE: 'List expenses from your Splitwise account',
     SETTLE_EXPENESE: 'Settle expenses in your Splitwise account'
@@ -23,7 +25,33 @@ commands = {
 
 SETTLE_WITH, CONFIRM = range(2)
 
-OAUTH_TOKEN, OAUTH_TOKEN_SECRET = None, None
+
+# OAUTH_TOKEN, OAUTH_TOKEN_SECRET = None, None
+
+
+def connect(update, context):
+    url, secret = splitwise_object.getAuthorizeURL()
+    context.chat_data['secret'] = secret
+    update.message.reply_text(url)
+
+
+def start(update, context):
+    logger.info(context.args[0])
+    global OAUTH_TOKEN, OAUTH_TOKEN_SECRET
+    tokens = context.args[0].split('-')
+    OAUTH_TOKEN = tokens[0]
+    OAUTH_TOKEN_SECRET = tokens[1]
+    logger.info(context.chat_data['secret'])
+    access_token = splitwise_object.getAccessToken(OAUTH_TOKEN, context.chat_data['secret'], OAUTH_TOKEN_SECRET)
+    logger.info(
+        access_token)  # dictionary with oauth_token and oauth_token_secret as keys, these are the real values for login purposes
+    splitwise_object.setAccessToken(access_token)
+
+
+def help(update, context):
+    help_text = 'The following commands are available: \n'
+    help_text += ''.join([f"{command}: {commands[command]}\n" for command in commands])
+    update.message.reply_text(help_text)  # send the generated help page
 
 
 def send_typing_action(func):
@@ -38,7 +66,7 @@ def send_typing_action(func):
 
 
 def initialize_bot(update):
-    ''' initialze the splitwise object '''
+    """ initialize the splitwise object """
     if update is not None:
         logger.info('User %s started the conversation.', update.message.from_user.first_name)
     access_token = {
@@ -49,16 +77,14 @@ def initialize_bot(update):
     logger.info('Splitwise Bot initalized!')
 
 
-def help(update, context):
-    help_text = 'The following commands are available: \n'
-    help_text += ''.join([f"{command}: {commands[command]}\n" for command in commands])
-    update.message.reply_text(help_text)  # send the generated help page
+def _get_amount_from_friend(friend):
+    return abs(float(friend.getBalances()[0].getAmount()))
 
 
 def _get_lend_expenses(friends_with_expenses):
     lend_output = 'OWES YOU:\n'
     lend_output += ''.join(
-        [f'\t\t{friend.getFirstName()} {friend.getLastName()}: ₹{friend.getBalances()[0].getAmount()}\n'
+        [f'{friend.getFirstName()} {friend.getLastName()}: ₹{_get_amount_from_friend(friend)}\n'
          for friend in friends_with_expenses if float(friend.getBalances()[0].getAmount()) > 0])
     logger.debug(lend_output)
     return lend_output
@@ -67,7 +93,7 @@ def _get_lend_expenses(friends_with_expenses):
 def _get_borrowed_expenses(friends_with_expenses):
     borrow_output = 'YOU OWE:\n'
     borrow_output += ''.join(
-        [f'\t\t{friend.getFirstName()} {friend.getLastName()}: ₹{friend.getBalances()[0].getAmount()}\n'
+        [f'{friend.getFirstName()} {friend.getLastName()}: ₹{_get_amount_from_friend(friend)}\n'
          for friend in friends_with_expenses if float(friend.getBalances()[0].getAmount()) < 0])
     logger.debug(borrow_output)
     return borrow_output
@@ -94,11 +120,11 @@ def list_expense(update, context):
 
 def _get_keyboard_layout(context):
     friends_with_expenses = _get_friends_with_expenses()
-    borrowed = [friend for friend in friends_with_expenses if float(friend.getBalances()[0].getAmount()) < 0]
+    borrowed_friends = [friend for friend in friends_with_expenses if float(friend.getBalances()[0].getAmount()) < 0]
 
     keyboard = []
     row = []
-    for friend in borrowed:
+    for friend in borrowed_friends:
         name = f'{friend.getFirstName()}  {friend.getLastName()}'
         row.append(InlineKeyboardButton(name, callback_data=friend.getId()))
         if len(row) == 2:
@@ -106,56 +132,6 @@ def _get_keyboard_layout(context):
             row = []
     keyboard.append(row)
     return keyboard
-
-
-def create_settlement(update, context):
-    query = update.callback_query
-    print(query)
-    # settle_amount = context.chat_data[SETTLE_AMOUNT]
-    # payer_id = context.chat_data[PAYER_ID]
-    # payee_id = context.chat_data[PAYEE_ID]
-
-    # expense = Expense()
-    # expense.setCost(settle_amount)
-    # expense.setDescription('Settling the amount')
-
-    # payer = ExpenseUser()
-    # payer.setId(payer_id)
-    # payer.setPaidShare(settle_amount)
-    # payer.setOwedShare(0.00)
-
-    # payee = ExpenseUser()
-    # payee.setId(payee_id)
-    # payee.setPaidShare(0.00)
-    # payee.setOwedShare(settle_amount)
-
-    # users = [payer, payee]
-    # expense.setUsers(users)
-    # expense = splitwise_object.createExpense(expense)
-
-    # logger.info(expense)
-    # context.bot.edit_message_text(
-    #     chat_id=query.message.chat_id,
-    #     message_id=query.message.message_id,
-    #     text='Expense settled!'
-    # )
-
-
-def no_settlement_done(update, context):
-    query = update.callback_query
-    context.bot.edit_message_text(
-        chat_id=query.message.chat_id,
-        message_id=query.message.message_id,
-        text='No settlement done'
-    )
-
-
-def cancel(update, context):
-    user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
-    update.message.reply_text('Bye! I hope we can talk again some day.',
-                              reply_markup=ReplyKeyboardRemove())
-    return ConversationHandler.END
 
 
 def settle_expense(update, context):
@@ -166,6 +142,79 @@ def settle_expense(update, context):
         reply_markup=reply_markup
     )
     return SETTLE_WITH
+
+
+def settle_with_friend(update, context):
+    query = update.callback_query
+    friend_id = int(query.data)
+    friends = _get_friends_with_expenses()
+
+    _id_name_mapping = {friend.getId(): f'{friend.getFirstName()} {friend.getLastName()}' for friend in friends}
+    _id_amount_mapping = {friend.getId(): _get_amount_from_friend(friend)    for friend in friends}
+
+    # logger.info(_id_name_mapping[friend_id], _id_amount_mapping[friend_id])
+    context.chat_data[SETTLE_WITH_FRIEND] = (_id_name_mapping[friend_id], _id_amount_mapping[friend_id], friend_id)
+    confirm_settlement(update, context)
+    return CONFIRM
+
+
+def confirm_settlement(update, context):
+    query = update.callback_query
+    name, amount, _ = context.chat_data[SETTLE_WITH_FRIEND]
+    keyboard = [
+        [InlineKeyboardButton('Yes', callback_data='yes'),
+         InlineKeyboardButton('No', callback_data='no')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    context.bot.edit_message_text(
+        chat_id=query.message.chat_id,
+        message_id=query.message.message_id,
+        text=f'Settle balance with {name} of ₹{amount}?',
+        reply_markup=reply_markup
+    )
+
+
+def create_settlement(update, context):
+    logger.info("Settling the expense!")
+    query = update.callback_query
+
+    name, amount, friend_id = context.chat_data[SETTLE_WITH_FRIEND]
+
+    self_id = splitwise_object.getCurrentUser().getId()
+
+    expense = Expense()
+    expense.setCost(amount)
+    expense.setDescription('Settling the amount')
+
+    payer = ExpenseUser()
+    payer.setId(self_id)
+    payer.setPaidShare(amount)
+    payer.setOwedShare(0.00)
+
+    payee = ExpenseUser()
+    payee.setId(friend_id)
+    payee.setPaidShare(0.00)
+    payee.setOwedShare(amount)
+
+    users = [payer, payee]
+    expense.setUsers(users)
+    expense = splitwise_object.createExpense(expense)
+
+    logger.info(expense)
+    context.bot.edit_message_text(
+        chat_id=query.message.chat_id,
+        message_id=query.message.message_id,
+        text='Expense settled!'
+    )
+
+
+def cancel_settlement(update, context):
+    query = update.callback_query
+    context.bot.edit_message_text(
+        chat_id=query.message.chat_id,
+        message_id=query.message.message_id,
+        text='No settlement done'
+    )
 
 
 def error(update, context):
@@ -183,44 +232,28 @@ def unknown(update, context):
     update.message.reply_text(text="Sorry, I didn't understand that command.")
 
 
-# def start(update, context):
-#     print(context.args[0])
-#     global OAUTH_TOKEN, OAUTH_TOKEN_SECRET
-#     tokens = context.args[0].split('-')
-#     OAUTH_TOKEN = tokens[0]
-#     OAUTH_TOKEN_SECRET = tokens[1]
-#     print(context.chat_data['secret'])
-#     access_token = splitwise_object.getAccessToken(OAUTH_TOKEN, context.chat_data['secret'], OAUTH_TOKEN_SECRET)
-#     print(access_token)
-#     splitwise_object.setAccessToken(access_token)
-#     # session['access_token'] = access_token
-#
-#
-# def connect(update, context):
-#     url, secret = splitwise_object.getAuthorizeURL()
-#     context.chat_data['secret'] = secret
-#     update.message.reply_text(url)
-
-
-
 def main():
     updater = Updater(BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
 
-    # dispatcher.add_handler(CommandHandler(CONNECT, connect))
-    # dispatcher.add_handler(CommandHandler(START, start))
+    dispatcher.add_handler(CommandHandler(CONNECT, connect))
+    dispatcher.add_handler(CommandHandler(START, start))
     dispatcher.add_handler(CommandHandler(HELP, help))
     dispatcher.add_handler(CommandHandler(LIST_EXPENSE, list_expense))
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler(SETTLE_EXPENESE, settle_expense)],
         states={
+            SETTLE_WITH: [CallbackQueryHandler(settle_with_friend)],
             CONFIRM: [
                 CallbackQueryHandler(create_settlement, pattern='^yes$'),
-                CallbackQueryHandler(no_settlement_done, pattern='^no$')
+                CallbackQueryHandler(cancel_settlement, pattern='^no$')
             ]
         },
-        fallbacks=[CommandHandler('cancel', cancel)]
+        fallbacks=[CommandHandler(CANCEL, cancel_settlement)],
+        allow_reentry=True,
+        conversation_timeout=180,
+
     )
     dispatcher.add_handler(conv_handler)
 
