@@ -20,11 +20,13 @@ SETTLE_WITH_FRIEND = 'settle_with_friend'
 CREATE_EXPENSE = 'create_expense'
 
 commands = {
+    CONNECT: 'Connects your Splitwise account',
     LIST_EXPENSE: 'List expenses from your Splitwise account',
+    CREATE_EXPENSE: 'Create new expense in your Splitwise account',
     SETTLE_EXPENESE: 'Settle expenses in your Splitwise account'
 }
 
-AMOUNT, DESCRIPTION, SETTLE_WITH, CONFIRM = range(4)
+AMOUNT, TYPING_REPLY, DESCRIPTION, SETTLE_WITH, CONFIRM = range(5)
 
 
 # OAUTH_TOKEN, OAUTH_TOKEN_SECRET = None, None
@@ -32,7 +34,7 @@ AMOUNT, DESCRIPTION, SETTLE_WITH, CONFIRM = range(4)
 
 def connect(update, context):
     url, secret = splitwise_object.getAuthorizeURL()
-    context.chat_data['secret'] = secret
+    context.user_data['secret'] = secret
     update.message.reply_text(url)
 
 
@@ -42,17 +44,17 @@ def start(update, context):
     tokens = context.args[0].split('-')
     OAUTH_TOKEN = tokens[0]
     OAUTH_TOKEN_SECRET = tokens[1]
-    logger.info(context.chat_data['secret'])
-    access_token = splitwise_object.getAccessToken(OAUTH_TOKEN, context.chat_data['secret'], OAUTH_TOKEN_SECRET)
-    logger.info(
-        access_token)  # dictionary with oauth_token and oauth_token_secret as keys, these are the real values for login purposes
+    logger.info(context.user_data['secret'])
+    access_token = splitwise_object.getAccessToken(OAUTH_TOKEN, context.user_data['secret'], OAUTH_TOKEN_SECRET)
+    logger.info(access_token)  # dictionary with oauth_token and oauth_token_secret as keys,
+    # these are the real values for login purposes
     splitwise_object.setAccessToken(access_token)
 
 
 def help(update, context):
-    help_text = 'The following commands are available: \n'
-    help_text += ''.join([f"{command}: {commands[command]}\n" for command in commands])
-    update.message.reply_text(help_text)  # send the generated help page
+    help_text = '<b>The following commands are available:</b>\n\n'
+    help_text += ''.join([f'<b>{command}:</b> <i>{commands[command]}</i>\n' for command in commands])
+    update.message.reply_text(help_text, parse_mode=ParseMode.HTML)  # send the generated help page
 
 
 def send_typing_action(func):
@@ -66,7 +68,7 @@ def send_typing_action(func):
     return command_func
 
 
-def initialize_bot(update):
+def _initialize_bot(update):
     """ initialize the splitwise object """
     if update is not None:
         logger.info('User %s started the conversation.', update.message.from_user.first_name)
@@ -119,7 +121,7 @@ def _get_all_expenses():
 
 @send_typing_action
 def list_expense(update, context):
-    initialize_bot(update)
+    _initialize_bot(update)
 
     output = _get_all_expenses()
     update.message.reply_text(output, parse_mode=ParseMode.HTML)
@@ -149,7 +151,7 @@ def _get_id_amount_mapping():
 
 
 def create_expense(update, context):
-    initialize_bot(update)
+    _initialize_bot(update)
 
     friends = splitwise_object.getFriends()
     reply_markup = InlineKeyboardMarkup(_get_keyboard_layout(friends, column_size=3))
@@ -167,14 +169,18 @@ def take_amount_input(update, context):
 
     _id_name_mapping = _get_id_name_mapping()
     name = _id_name_mapping[friend_id]
-    context.chat_data[CREATE_EXPENSE] = (name,)
+    context.user_data[CREATE_EXPENSE] = (name,)
 
     context.bot.edit_message_text(
         chat_id=query.message.chat_id,
         message_id=query.message.message_id,
-        text=f'Enter amount for the expense with {name}'
+        text=f'Enter amount for expense with {name}'
     )
-    return DESCRIPTION
+    return TYPING_REPLY
+
+
+def received_information(update, context):
+    user_data = update.message.text
 
 
 def take_description_input(update, context):
@@ -191,7 +197,7 @@ def take_description_input(update, context):
 
 def confirm(update, context):
     query = update.callback_query
-    name, amount, _ = context.chat_data[SETTLE_WITH_FRIEND]
+    name, amount, _ = context.user_data[SETTLE_WITH_FRIEND]
     keyboard = [
         [InlineKeyboardButton('Yes', callback_data='yes'),
          InlineKeyboardButton('No', callback_data='no')]
@@ -206,7 +212,7 @@ def confirm(update, context):
 
 
 def settle_expense(update, context):
-    initialize_bot(update)
+    _initialize_bot(update)
 
     friends_with_expenses = _get_friends_with_expenses()
     borrowed_friends = [friend for friend in friends_with_expenses if float(friend.getBalances()[0].getAmount()) < 0]
@@ -227,7 +233,7 @@ def settle_with_friend(update, context):
     _id_amount_mapping = _get_id_amount_mapping()
 
     # logger.info(_id_name_mapping[friend_id], _id_amount_mapping[friend_id])
-    context.chat_data[SETTLE_WITH_FRIEND] = (_id_name_mapping[friend_id], _id_amount_mapping[friend_id], friend_id)
+    context.user_data[SETTLE_WITH_FRIEND] = (_id_name_mapping[friend_id], _id_amount_mapping[friend_id], friend_id)
     confirm(update, context)
     return CONFIRM
 
@@ -236,7 +242,7 @@ def create_settlement(update, context):
     logger.info("Settling the expense!")
     query = update.callback_query
 
-    name, amount, friend_id = context.chat_data[SETTLE_WITH_FRIEND]
+    name, amount, friend_id = context.user_data[SETTLE_WITH_FRIEND]
 
     self_id = splitwise_object.getCurrentUser().getId()
 
@@ -277,7 +283,7 @@ def cancel_expense(update, context):
 
 # TODO - find some way to store the last notification id and keep a job running which will check for new notifications
 def get_notifications(update, context):
-    initialize_bot(update)
+    _initialize_bot(update)
 
     print(splitwise_object.getNotifications())
 
@@ -293,7 +299,7 @@ def error(update, context):
 
 def _get_converstaion_handler(entry_points, states):
     conv_handler = ConversationHandler(
-        entry_points = entry_points,
+        entry_points=entry_points,
         states=states,
         fallbacks=[CommandHandler(CANCEL, cancel_expense)],
         allow_reentry=True,
@@ -315,6 +321,9 @@ def main():
         entry_points=[CommandHandler(CREATE_EXPENSE, create_expense)],
         states={
             AMOUNT: [CallbackQueryHandler(take_amount_input)],
+            TYPING_REPLY: [MessageHandler(Filters.text,
+                                          received_information),
+                           ],
             DESCRIPTION: [CallbackQueryHandler(take_description_input)],
             CONFIRM: [
                 CallbackQueryHandler(create_settlement, pattern='^yes$'),
