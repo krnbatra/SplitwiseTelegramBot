@@ -169,7 +169,7 @@ def take_amount_input(update, context):
 
     _id_name_mapping = _get_id_name_mapping()
     name = _id_name_mapping[friend_id]
-    context.user_data[CREATE_EXPENSE] = (name,)
+    context.user_data[CREATE_EXPENSE] = [friend_id, name]
 
     context.bot.edit_message_text(
         chat_id=query.message.chat_id,
@@ -179,36 +179,49 @@ def take_amount_input(update, context):
     return TYPING_REPLY
 
 
-def received_information(update, context):
-    user_data = update.message.text
+def received_amount_information(update, context):
+    try:
+        amount = float(update.message.text)
+        if amount <= 0:
+            raise ValueError
+        context.user_data[CREATE_EXPENSE].append(amount)
+        name = context.user_data[CREATE_EXPENSE][1]
+        update.message.reply_text(f'Expense to be created with <b>{name}</b> with amount <b>₹{amount}</b>\n'
+                                  f'Now enter the description for this expense', parse_mode=ParseMode.HTML)
+        return DESCRIPTION
+    except ValueError:
+        update.message.reply_text('Invalid amount specified. Amount should be a positive value!!!')
+        return TYPING_REPLY
 
 
-def take_description_input(update, context):
-    query = update.callback_query
-    logger.info(update)
-    context.bot.edit_message_text(
-        chat_id=query.message.chat_id,
-        message_id=query.message.message_id,
-        text=f'Enter description for the expense'
-    )
-    confirm(update, context)
+def received_description_information(update, context):
+    description = update.message.text
+    context.user_data[CREATE_EXPENSE].append(description)
+    _, name, amount, description = context.user_data[CREATE_EXPENSE]
+    update.message.reply_text(f'Expense to be created with <b>{name}</b> with amount <b>₹{amount}</b>'
+                              f' and description <b>{description}</b>', parse_mode=ParseMode.HTML)
+    text = 'Are you sure you want to proceed?'
+    confirm(update, context, text, True)
     return CONFIRM
 
 
-def confirm(update, context):
-    query = update.callback_query
-    name, amount, _ = context.user_data[SETTLE_WITH_FRIEND]
+def confirm(update, context, text, new_message):
     keyboard = [
         [InlineKeyboardButton('Yes', callback_data='yes'),
          InlineKeyboardButton('No', callback_data='no')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    context.bot.edit_message_text(
-        chat_id=query.message.chat_id,
-        message_id=query.message.message_id,
-        text=f'Settle balance with {name} of ₹{amount}?',
-        reply_markup=reply_markup
-    )
+    if new_message is True:
+        update.message.reply_text(text, reply_markup=reply_markup)
+    else:
+        query = update.callback_query
+
+        context.bot.edit_message_text(
+            chat_id=query.message.chat_id,
+            message_id=query.message.message_id,
+            text=text,
+            reply_markup=reply_markup
+        )
 
 
 def settle_expense(update, context):
@@ -232,44 +245,63 @@ def settle_with_friend(update, context):
     _id_name_mapping = _get_id_name_mapping()
     _id_amount_mapping = _get_id_amount_mapping()
 
-    # logger.info(_id_name_mapping[friend_id], _id_amount_mapping[friend_id])
-    context.user_data[SETTLE_WITH_FRIEND] = (_id_name_mapping[friend_id], _id_amount_mapping[friend_id], friend_id)
-    confirm(update, context)
+    name = _id_name_mapping[friend_id]
+    amount = _id_amount_mapping[friend_id]
+    text = f'Settle balance with {name} of ₹{amount}?'
+    confirm(update, context, text, False)
     return CONFIRM
+
+
+def create_new_expense(update, context):
+    logger.info("Creating expense!")
+    query = update.callback_query
+    friend_id, name, amount, description = context.user_data[CREATE_EXPENSE]
+
+    self_id = splitwise_object.getCurrentUser().getId()
+    create_expense_object(self_id, friend_id, amount, description)
+
+    context.bot.edit_message_text(
+        chat_id=query.message.chat_id,
+        message_id=query.message.message_id,
+        text='New expense created!'
+    )
 
 
 def create_settlement(update, context):
     logger.info("Settling the expense!")
     query = update.callback_query
-
     name, amount, friend_id = context.user_data[SETTLE_WITH_FRIEND]
 
     self_id = splitwise_object.getCurrentUser().getId()
+    create_expense_object(self_id, friend_id, amount, 'Settling the expense')
 
+    context.bot.edit_message_text(
+        chat_id=query.message.chat_id,
+        message_id=query.message.message_id,
+        text='Expense settled!'
+    )
+
+
+def create_expense_object(payer_id, payee_id, amount, description):
     expense = Expense()
     expense.setCost(amount)
-    expense.setDescription('Settling the amount')
+    expense.setDescription(description)
 
     payer = ExpenseUser()
-    payer.setId(self_id)
+    payer.setId(payer_id)
     payer.setPaidShare(amount)
     payer.setOwedShare(0.00)
 
     payee = ExpenseUser()
-    payee.setId(friend_id)
+    payee.setId(payee_id)
     payee.setPaidShare(0.00)
     payee.setOwedShare(amount)
 
     users = [payer, payee]
     expense.setUsers(users)
     expense = splitwise_object.createExpense(expense)
-
     logger.info(expense)
-    context.bot.edit_message_text(
-        chat_id=query.message.chat_id,
-        message_id=query.message.message_id,
-        text='Expense settled!'
-    )
+    return expense
 
 
 def cancel_expense(update, context):
@@ -322,11 +354,12 @@ def main():
         states={
             AMOUNT: [CallbackQueryHandler(take_amount_input)],
             TYPING_REPLY: [MessageHandler(Filters.text,
-                                          received_information),
+                                          received_amount_information),
                            ],
-            DESCRIPTION: [CallbackQueryHandler(take_description_input)],
+            DESCRIPTION: [MessageHandler(Filters.text,
+                                         received_description_information), ],
             CONFIRM: [
-                CallbackQueryHandler(create_settlement, pattern='^yes$'),
+                CallbackQueryHandler(create_new_expense, pattern='^yes$'),
                 CallbackQueryHandler(cancel_expense, pattern='^no$')
             ]
         }
