@@ -5,10 +5,12 @@ verify_ssl = true
 
 [dev-packages]
 pylint = "*"
+autopep8 = "*"
 
 [packages]
 splitwise = "*"
 python-telegram-bot = "*"
+emoji = "*"
 
 [requires]
 python_version = "3.7"
