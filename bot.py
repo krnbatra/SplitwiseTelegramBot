@@ -2,13 +2,13 @@ import configurations.settings as settings
 import logging
 import os
 
+from emoji import emojize
 from functools import wraps
 from splitwise import Splitwise
 from splitwise.expense import Expense
 from splitwise.user import ExpenseUser
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ChatAction, ParseMode
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, ConversationHandler, MessageHandler, Filters
-# from config import BOT_TOKEN, CONSUMER_KEY, CONSUMER_SECRET #, OAUTH_TOKEN, OAUTH_TOKEN_SECRET
 from commands import HELP, LIST_EXPENSE, SETTLE_EXPENESE, CREATE_EXPENSE, GET_NOTIFICATIONS, START, CONNECT, CANCEL
 
 # Enable logging
@@ -46,17 +46,21 @@ def connect(update, context):
 
 
 def start(update, context):
-    global OAUTH_TOKEN, OAUTH_TOKEN_SECRET
-    tokens = context.args[0].split('-')
-    OAUTH_TOKEN = tokens[0]
-    OAUTH_TOKEN_SECRET = tokens[1]
-    logger.info('Secret', context.user_data['secret'])
-    access_token = splitwise_object.getAccessToken(
-        OAUTH_TOKEN, context.user_data['secret'], OAUTH_TOKEN_SECRET)
-    # dictionary with oauth_token and oauth_token_secret as keys,
-    logger.info(access_token)
-    # these are the real values for login purposes
-    splitwise_object.setAccessToken(access_token)
+    try:
+        global OAUTH_TOKEN, OAUTH_TOKEN_SECRET
+        tokens = context.args[0].split('-')
+        OAUTH_TOKEN = tokens[0]
+        OAUTH_TOKEN_SECRET = tokens[1]
+        access_token = splitwise_object.getAccessToken(
+            OAUTH_TOKEN, context.user_data['secret'], OAUTH_TOKEN_SECRET)
+        # dictionary with oauth_token and oauth_token_secret as keys,
+        logger.info(access_token)
+        # these are the real values for login purposes
+        splitwise_object.setAccessToken(access_token)
+        update.message.reply_text(
+            emojize("""Splitwise account connected.\nNow manage your money effectively! :moneybag: """, use_aliases=True))
+    except IndexError:
+        update.message.reply_text("Run /connect command first!")
 
 
 def help(update, context):
