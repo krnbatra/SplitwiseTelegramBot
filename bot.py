@@ -1,4 +1,6 @@
+import configurations.settings as settings
 import logging
+import os
 
 from functools import wraps
 from splitwise import Splitwise
@@ -6,7 +8,7 @@ from splitwise.expense import Expense
 from splitwise.user import ExpenseUser
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ChatAction, ParseMode
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, ConversationHandler, MessageHandler, Filters
-from config import BOT_TOKEN, CONSUMER_KEY, CONSUMER_SECRET, OAUTH_TOKEN, OAUTH_TOKEN_SECRET
+# from config import BOT_TOKEN, CONSUMER_KEY, CONSUMER_SECRET #, OAUTH_TOKEN, OAUTH_TOKEN_SECRET
 from commands import HELP, LIST_EXPENSE, SETTLE_EXPENESE, CREATE_EXPENSE, GET_NOTIFICATIONS, START, CONNECT, CANCEL
 
 # Enable logging
@@ -14,10 +16,15 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-splitwise_object = Splitwise(CONSUMER_KEY, CONSUMER_SECRET)
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+
+splitwise_object = Splitwise(
+    os.environ.get("CONSUMER_KEY"), os.environ.get("CONSUMER_SECRET")
+)
 
 SETTLE_WITH_FRIEND = 'settle_with_friend'
 CREATE_EXPENSE = 'create_expense'
+
 
 commands = {
     CONNECT: 'Connects your Splitwise account',
@@ -29,7 +36,7 @@ commands = {
 AMOUNT, TYPING_REPLY, DESCRIPTION, SETTLE_WITH, CONFIRM = range(5)
 
 
-# OAUTH_TOKEN, OAUTH_TOKEN_SECRET = None, None
+OAUTH_TOKEN, OAUTH_TOKEN_SECRET = None, None
 
 
 def connect(update, context):
@@ -39,22 +46,25 @@ def connect(update, context):
 
 
 def start(update, context):
-    logger.info(context.args[0])
     global OAUTH_TOKEN, OAUTH_TOKEN_SECRET
     tokens = context.args[0].split('-')
     OAUTH_TOKEN = tokens[0]
     OAUTH_TOKEN_SECRET = tokens[1]
-    logger.info(context.user_data['secret'])
-    access_token = splitwise_object.getAccessToken(OAUTH_TOKEN, context.user_data['secret'], OAUTH_TOKEN_SECRET)
-    logger.info(access_token)  # dictionary with oauth_token and oauth_token_secret as keys,
+    logger.info('Secret', context.user_data['secret'])
+    access_token = splitwise_object.getAccessToken(
+        OAUTH_TOKEN, context.user_data['secret'], OAUTH_TOKEN_SECRET)
+    # dictionary with oauth_token and oauth_token_secret as keys,
+    logger.info(access_token)
     # these are the real values for login purposes
     splitwise_object.setAccessToken(access_token)
 
 
 def help(update, context):
     help_text = '<b>The following commands are available:</b>\n\n'
-    help_text += ''.join([f'<b>{command}:</b> <i>{commands[command]}</i>\n' for command in commands])
-    update.message.reply_text(help_text, parse_mode=ParseMode.HTML)  # send the generated help page
+    help_text += ''.join(
+        [f'<b>{command}:</b> <i>{commands[command]}</i>\n' for command in commands])
+    # send the generated help page
+    update.message.reply_text(help_text, parse_mode=ParseMode.HTML)
 
 
 def send_typing_action(func):
@@ -62,7 +72,8 @@ def send_typing_action(func):
 
     @wraps(func)
     def command_func(update, context, *args, **kwargs):
-        context.bot.send_chat_action(chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
+        context.bot.send_chat_action(
+            chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
         return func(update, context, *args, **kwargs)
 
     return command_func
@@ -71,7 +82,8 @@ def send_typing_action(func):
 def _initialize_bot(update):
     """ initialize the splitwise object """
     if update is not None:
-        logger.info('User %s started the conversation.', update.message.from_user.first_name)
+        logger.info('User %s started the conversation.',
+                    update.message.from_user.first_name)
     access_token = {
         'oauth_token': OAUTH_TOKEN,
         'oauth_token_secret': OAUTH_TOKEN_SECRET
@@ -108,20 +120,22 @@ def _get_borrowed_expenses(friends_with_expenses):
 
 
 def _get_friends_with_expenses():
-    friends_with_expenses = [friend for friend in splitwise_object.getFriends() if len(friend.getBalances()) > 0]
+    friends_with_expenses = [friend for friend in splitwise_object.getFriends(
+    ) if len(friend.getBalances()) > 0]
     logger.debug(friends_with_expenses)
     return friends_with_expenses
 
 
 def _get_all_expenses():
     friends_with_expenses = _get_friends_with_expenses()
-    output = _get_lend_expenses(friends_with_expenses) + '\n\n' + _get_borrowed_expenses(friends_with_expenses)
+    output = _get_lend_expenses(
+        friends_with_expenses) + '\n\n' + _get_borrowed_expenses(friends_with_expenses)
     return output
 
 
 @send_typing_action
 def list_expense(update, context):
-    _initialize_bot(update)
+    # _initialize_bot(update)
 
     output = _get_all_expenses()
     update.message.reply_text(output, parse_mode=ParseMode.HTML)
@@ -151,10 +165,11 @@ def _get_id_amount_mapping():
 
 
 def create_expense(update, context):
-    _initialize_bot(update)
+    # _initialize_bot(update)
 
     friends = splitwise_object.getFriends()
-    reply_markup = InlineKeyboardMarkup(_get_keyboard_layout(friends, column_size=3))
+    reply_markup = InlineKeyboardMarkup(
+        _get_keyboard_layout(friends, column_size=3))
 
     update.message.reply_text(
         'Create new expense with',
@@ -190,7 +205,8 @@ def received_amount_information(update, context):
                                   f'Now enter the description for this expense', parse_mode=ParseMode.HTML)
         return DESCRIPTION
     except ValueError:
-        update.message.reply_text('Invalid amount specified. Amount should be a positive value!!!')
+        update.message.reply_text(
+            'Invalid amount specified. Amount should be a positive value!!!')
         return TYPING_REPLY
 
 
@@ -225,10 +241,11 @@ def confirm(update, context, text, new_message):
 
 
 def settle_expense(update, context):
-    _initialize_bot(update)
+    # _initialize_bot(update)
 
     friends_with_expenses = _get_friends_with_expenses()
-    borrowed_friends = [friend for friend in friends_with_expenses if float(friend.getBalances()[0].getAmount()) < 0]
+    borrowed_friends = [friend for friend in friends_with_expenses if float(
+        friend.getBalances()[0].getAmount()) < 0]
     reply_markup = InlineKeyboardMarkup(_get_keyboard_layout(borrowed_friends))
 
     update.message.reply_text(
@@ -315,7 +332,7 @@ def cancel_expense(update, context):
 
 # TODO - find some way to store the last notification id and keep a job running which will check for new notifications
 def get_notifications(update, context):
-    _initialize_bot(update)
+    # _initialize_bot(update)
 
     print(splitwise_object.getNotifications())
 
@@ -329,15 +346,15 @@ def error(update, context):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
 
-def _get_converstaion_handler(entry_points, states):
-    conv_handler = ConversationHandler(
+def _get_conversation_handler(entry_points, states):
+    conversation_handler = ConversationHandler(
         entry_points=entry_points,
         states=states,
         fallbacks=[CommandHandler(CANCEL, cancel_expense)],
         allow_reentry=True,
         conversation_timeout=180
     )
-    return conv_handler
+    return conversation_handler
 
 
 def main():
@@ -349,7 +366,7 @@ def main():
     dispatcher.add_handler(CommandHandler(HELP, help))
     dispatcher.add_handler(CommandHandler(LIST_EXPENSE, list_expense))
 
-    list_conv_handler = _get_converstaion_handler(
+    list_conv_handler = _get_conversation_handler(
         entry_points=[CommandHandler(CREATE_EXPENSE, create_expense)],
         states={
             AMOUNT: [CallbackQueryHandler(take_amount_input)],
@@ -366,7 +383,7 @@ def main():
     )
     dispatcher.add_handler(list_conv_handler)
 
-    settle_conv_handler = _get_converstaion_handler(
+    settle_conv_handler = _get_conversation_handler(
         entry_points=[CommandHandler(SETTLE_EXPENESE, settle_expense)],
         states={
             SETTLE_WITH: [CallbackQueryHandler(settle_with_friend)],
@@ -386,7 +403,12 @@ def main():
     # log all errors
     dispatcher.add_error_handler(error)
 
-    updater.start_polling()
+    if settings.WEBHOOK:
+        # signal.signal(signal.SIGINT, graceful_exit)
+        updater.start_webhook(**settings.WEBHOOK_OPTIONS)
+        updater.bot.set_webhook(url=settings.WEBHOOK_URL)
+    else:
+        updater.start_polling()
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
