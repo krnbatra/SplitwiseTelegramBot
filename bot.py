@@ -58,9 +58,10 @@ def start(update, context):
         # these are the real values for login purposes
         splitwise_object.setAccessToken(access_token)
         update.message.reply_text(
-            emojize("""Splitwise account connected.\nNow manage your money effectively! :moneybag: """, use_aliases=True))
+            emojize("Splitwise account connected.\nNow manage your money effectively! :moneybag: ", use_aliases=True))
     except IndexError:
-        update.message.reply_text("Run /connect command first!")
+        update.message.reply_text(
+            "Your splitwise account is not connected.Please connect your account first")
 
 
 def help(update, context):
