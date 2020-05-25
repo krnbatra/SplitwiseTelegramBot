@@ -1,14 +1,13 @@
 # Telegram API framework core imports
-from telegram.ext import Dispatcher, CallbackContext, MessageHandler, Filters, CallbackQueryHandler
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
-# Helper methods import
-from utils.logger import get_logger
-from utils.helper import get_keyboard_layout, confirm
-
+from telegram import InlineKeyboardMarkup, ParseMode
 # Telegram API framework handlers imports
 from telegram.ext import CommandHandler, ConversationHandler
+from telegram.ext import Dispatcher, MessageHandler, Filters, CallbackQueryHandler
 
 from main import splitwise
+from utils.helper import get_keyboard_layout, confirm
+# Helper methods import
+from utils.logger import get_logger
 
 # Init logger
 logger = get_logger(__name__)

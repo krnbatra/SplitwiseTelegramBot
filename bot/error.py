@@ -1,6 +1,7 @@
 # Telegram API framework core imports
-from telegram.ext import Dispatcher, CallbackContext
 from telegram import Update
+from telegram.ext import Dispatcher, CallbackContext
+
 # Helper methods import
 from utils.logger import get_logger
 

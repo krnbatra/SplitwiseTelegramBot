@@ -1,12 +1,11 @@
-import configurations.settings as settings
-import logging
 import os
-
-from telegram.ext import Updater, CommandHandler, ConversationHandler, Dispatcher
 from importlib import import_module
-from splitwise_telegram import SplitwiseTelegramBot
 
+from telegram.ext import Updater, Dispatcher
+
+import configurations.settings as settings
 import utils.logger as logger
+from splitwise_telegram import SplitwiseTelegramBot
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
@@ -30,10 +29,6 @@ def get_notifications(update, context):
     # _initialize_bot(update)
 
     print(splitwise.getNotifications())
-
-
-def unknown(update, context):
-    update.message.reply_text(text="Sorry, I didn't understand that command.")
 
 
 def main():

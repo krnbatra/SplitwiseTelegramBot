@@ -1,13 +1,13 @@
 from emoji import emojize
-# Telegram API framework core imports
-from telegram.ext import Dispatcher, CallbackContext
 from telegram import Update
-# Helper methods import
-from utils.logger import get_logger
-
 # Telegram API framework handlers imports
 from telegram.ext import CommandHandler
+# Telegram API framework core imports
+from telegram.ext import Dispatcher, CallbackContext
+
 from main import splitwise
+# Helper methods import
+from utils.logger import get_logger
 
 # Init logger
 logger = get_logger(__name__)
