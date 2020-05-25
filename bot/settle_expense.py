@@ -18,6 +18,8 @@ SETTLE_EXPENSE = 'settle_expense'
 
 
 def cancel_expense(update, context):
+    logger.info(
+        f"APP: {update.effective_user.username}: Canceling settle expense")
     query = update.callback_query
     context.bot.edit_message_text(
         chat_id=query.message.chat_id,
@@ -45,6 +47,8 @@ def init(dispatcher: Dispatcher):
 
 
 def settle_expense(update, context):
+    logger.info(
+        f"APP: {update.effective_user.username}: Starting settle expense")
     friends_with_expenses = splitwise.get_friends_with_expenses()
     borrowed_friends = [friend for friend in friends_with_expenses if float(
         friend.getBalances()[0].getAmount()) < 0]
@@ -59,6 +63,8 @@ def settle_expense(update, context):
 
 
 def take_friend_input(update, context):
+    logger.info(
+        f"APP: {update.effective_user.username}: Taking friend input for settle expense")
     query = update.callback_query
     friend_id = int(query.data)
 
@@ -76,6 +82,8 @@ def take_friend_input(update, context):
 
 
 def create_settlement(update, context):
+    logger.info(
+        f"APP: {update.effective_user.username}: Creating settle expense")
     logger.info("Settling the expense!")
     query = update.callback_query
     name, amount, friend_id = context.user_data[SETTLE_EXPENSE]

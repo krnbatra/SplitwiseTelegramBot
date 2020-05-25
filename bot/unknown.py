@@ -16,4 +16,6 @@ def init(dispatcher: Dispatcher):
 
 
 def unknown(update, context):
+    logger.info(
+        f"APP: {update.effective_user.username}: Unknown command")
     update.message.reply_text(text="Sorry, I didn't understand that command.")

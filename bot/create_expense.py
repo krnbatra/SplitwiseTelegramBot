@@ -31,6 +31,8 @@ class InvalidDescriptionError(Error):
 
 
 def cancel_expense(update, context):
+    logger.info(
+        f"APP: {update.effective_user.username}: Canceling the create expense")
     query = update.callback_query
     context.bot.edit_message_text(
         chat_id=query.message.chat_id,
@@ -61,6 +63,8 @@ def init(dispatcher: Dispatcher):
 
 
 def create_expense(update, context):
+    logger.info(
+        f"APP: {update.effective_user.username}: Starting the create expense method")
     friends = splitwise.getFriends()
     reply_markup = InlineKeyboardMarkup(
         get_keyboard_layout(splitwise, friends, column_size=3))
@@ -73,6 +77,8 @@ def create_expense(update, context):
 
 
 def take_input(update, context):
+    logger.info(
+        f"APP: {update.effective_user.username}: Taking amount and description input")
     query = update.callback_query
     friend_id = int(query.data)
 
@@ -99,7 +105,8 @@ def received_input(update, context):
 
         if description is None or description == "":
             raise InvalidDescriptionError
-
+        logger.info(
+            f"APP: {update.effective_user.username}: Input received correctly")
         context.user_data[NEW_EXPENSE].extend([amount, description])
         # context.user_data[NEW_EXPENSE].append(description)
         id, name, amount, description = context.user_data[NEW_EXPENSE]
@@ -110,15 +117,22 @@ def received_input(update, context):
         confirm(update, context, text, True)
         return CONFIRM
     except (InvalidAmountError, TypeError) as e:
+        logger.info(
+            f"APP: {update.effective_user.username}: Invalid amount")
         update.message.reply_text(
             'Amount should be a positive value! Please input again.')
         return TYPING_REPLY
     except InvalidDescriptionError:
+        logger.info(
+            f"APP: {update.effective_user.username}: Invalid description")
         update.message.reply_text(
             'Description not specified! Please input again.'
         )
         return TYPING_REPLY
     except ValueError:
+        # when one of amount and description is not specified
+        logger.info(
+            f"APP: {update.effective_user.username}: Invalid input")
         update.message.reply_text(
             'Invalid input. Please input again.'
         )
@@ -126,6 +140,8 @@ def received_input(update, context):
 
 
 def create_new_expense(update, context):
+    logger.info(
+        f"APP: {update.effective_user.username}: Creating new expense!")
     query = update.callback_query
     friend_id, name, amount, description = context.user_data[NEW_EXPENSE]
 

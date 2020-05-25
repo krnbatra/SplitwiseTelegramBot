@@ -33,6 +33,8 @@ def send_typing_action(func):
 
 def get_all_expenses():
     friends_with_expenses = splitwise.get_friends_with_expenses()
+    logger.info(
+        f"APP: {update.effective_user.username}: In get all expenses friends calculations")
     output = f'{splitwise.get_lend_expenses(friends_with_expenses)}' \
              f'\n\n{splitwise.get_borrowed_expenses(friends_with_expenses)}'
     return output
@@ -40,5 +42,7 @@ def get_all_expenses():
 
 @send_typing_action
 def list_expense(update: Update, context: CallbackContext):
+    logger.info(
+        f"APP: {update.effective_user.username}: Listing all expenses")
     output = get_all_expenses()
     update.message.reply_text(output, parse_mode=ParseMode.HTML)

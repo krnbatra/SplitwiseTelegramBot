@@ -18,7 +18,6 @@ def init(dispatcher: Dispatcher):
 
 
 def connect(update: Update, context: CallbackContext):
-    logger.info(update)
     logger.info(
         f"APP: {update.effective_user.username}: Connecting to splitwise account")
     url, secret = splitwise.getAuthorizeURL()
