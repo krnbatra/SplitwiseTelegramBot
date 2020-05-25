@@ -2,21 +2,17 @@ import configurations.settings as settings
 import logging
 import os
 
-from functools import wraps
 from splitwise import Splitwise
 from splitwise.expense import Expense
 from splitwise.user import ExpenseUser
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ChatAction, ParseMode
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, ConversationHandler, Dispatcher, MessageHandler, Filters
 from importlib import import_module
+from splitwise_telegram import SplitwiseTelegramBot
 
 import utils.logger as logger
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-
-splitwise_object = Splitwise(
-    os.environ.get("CONSUMER_KEY"), os.environ.get("CONSUMER_SECRET")
-)
 
 SETTLE_WITH_FRIEND = 'settle_with_friend'
 CREATE_EXPENSE = 'create_expense'
@@ -26,6 +22,8 @@ AMOUNT, TYPING_REPLY, DESCRIPTION, SETTLE_WITH, CONFIRM = range(5)
 
 
 OAUTH_TOKEN, OAUTH_TOKEN_SECRET = None, None
+
+splitwise = SplitwiseTelegramBot()
 
 
 def load_handlers(dispatcher: Dispatcher):
@@ -40,18 +38,6 @@ def load_handlers(dispatcher: Dispatcher):
         module.init(dispatcher)
 
 
-def send_typing_action(func):
-    """Sends typing action while processing func command."""
-
-    @wraps(func)
-    def command_func(update, context, *args, **kwargs):
-        context.bot.send_chat_action(
-            chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
-        return func(update, context, *args, **kwargs)
-
-    return command_func
-
-
 def _initialize_bot(update):
     """ initialize the splitwise object """
     if update is not None:
@@ -63,55 +49,6 @@ def _initialize_bot(update):
     }
     splitwise_object.setAccessToken(access_token)
     logger.info('Splitwise Bot initalized!')
-
-
-def _get_amount_from_friend(friend):
-    return abs(float(friend.getBalances()[0].getAmount()))
-
-
-def _get_friend_full_name(friend):
-    first_name = friend.getFirstName()
-    return f'{first_name} {friend.getLastName()}' if friend.getLastName() is not None else first_name
-
-
-def _get_lend_expenses(friends_with_expenses):
-    lend_output = '<b>OWES YOU:</b>\n'
-    lend_output += ''.join(
-        [f'{_get_friend_full_name(friend)}: ₹{_get_amount_from_friend(friend)}\n'
-         for friend in friends_with_expenses if float(friend.getBalances()[0].getAmount()) > 0])
-    logger.debug(lend_output)
-    return lend_output
-
-
-def _get_borrowed_expenses(friends_with_expenses):
-    borrow_output = '<b>YOU OWE:</b>\n'
-    borrow_output += ''.join(
-        [f'{_get_friend_full_name(friend)}: ₹{_get_amount_from_friend(friend)}\n'
-         for friend in friends_with_expenses if float(friend.getBalances()[0].getAmount()) < 0])
-    logger.debug(borrow_output)
-    return borrow_output
-
-
-def _get_friends_with_expenses():
-    friends_with_expenses = [friend for friend in splitwise_object.getFriends(
-    ) if len(friend.getBalances()) > 0]
-    logger.debug(friends_with_expenses)
-    return friends_with_expenses
-
-
-def _get_all_expenses():
-    friends_with_expenses = _get_friends_with_expenses()
-    output = _get_lend_expenses(
-        friends_with_expenses) + '\n\n' + _get_borrowed_expenses(friends_with_expenses)
-    return output
-
-
-@send_typing_action
-def list_expense(update, context):
-    # _initialize_bot(update)
-
-    output = _get_all_expenses()
-    update.message.reply_text(output, parse_mode=ParseMode.HTML)
 
 
 def _get_keyboard_layout(friends, column_size=2):
@@ -331,42 +268,41 @@ def main():
     dispatcher = updater.dispatcher
 
     load_handlers(updater.dispatcher)
-    dispatcher.add_handler(CommandHandler(HELP, help))
-    dispatcher.add_handler(CommandHandler(LIST_EXPENSE, list_expense))
+    # dispatcher.add_handler(CommandHandler(LIST_EXPENSE, list_expense))
 
-    list_conv_handler = _get_conversation_handler(
-        entry_points=[CommandHandler(CREATE_EXPENSE, create_expense)],
-        states={
-            AMOUNT: [CallbackQueryHandler(take_amount_input)],
-            TYPING_REPLY: [MessageHandler(Filters.text,
-                                          received_amount_information),
-                           ],
-            DESCRIPTION: [MessageHandler(Filters.text,
-                                         received_description_information), ],
-            CONFIRM: [
-                CallbackQueryHandler(create_new_expense, pattern='^yes$'),
-                CallbackQueryHandler(cancel_expense, pattern='^no$')
-            ]
-        }
-    )
-    dispatcher.add_handler(list_conv_handler)
+    # list_conv_handler = _get_conversation_handler(
+    #     entry_points=[CommandHandler(CREATE_EXPENSE, create_expense)],
+    #     states={
+    #         AMOUNT: [CallbackQueryHandler(take_amount_input)],
+    #         TYPING_REPLY: [MessageHandler(Filters.text,
+    #                                       received_amount_information),
+    #                        ],
+    #         DESCRIPTION: [MessageHandler(Filters.text,
+    #                                      received_description_information), ],
+    #         CONFIRM: [
+    #             CallbackQueryHandler(create_new_expense, pattern='^yes$'),
+    #             CallbackQueryHandler(cancel_expense, pattern='^no$')
+    #         ]
+    #     }
+    # )
+    # dispatcher.add_handler(list_conv_handler)
 
-    settle_conv_handler = _get_conversation_handler(
-        entry_points=[CommandHandler(SETTLE_EXPENESE, settle_expense)],
-        states={
-            SETTLE_WITH: [CallbackQueryHandler(settle_with_friend)],
-            CONFIRM: [
-                CallbackQueryHandler(create_settlement, pattern='^yes$'),
-                CallbackQueryHandler(cancel_expense, pattern='^no$')
-            ]
-        }
-    )
-    dispatcher.add_handler(settle_conv_handler)
+    # settle_conv_handler = _get_conversation_handler(
+    #     entry_points=[CommandHandler(SETTLE_EXPENESE, settle_expense)],
+    #     states={
+    #         SETTLE_WITH: [CallbackQueryHandler(settle_with_friend)],
+    #         CONFIRM: [
+    #             CallbackQueryHandler(create_settlement, pattern='^yes$'),
+    #             CallbackQueryHandler(cancel_expense, pattern='^no$')
+    #         ]
+    #     }
+    # )
+    # dispatcher.add_handler(settle_conv_handler)
 
-    # dispatcher.add_handler(CommandHandler(GET_NOTIFICATIONS, get_notifications_callback))
+    # # dispatcher.add_handler(CommandHandler(GET_NOTIFICATIONS, get_notifications_callback))
 
-    # on noncommand i.e message - echo the message on Telegram
-    dispatcher.add_handler(MessageHandler(Filters.command, unknown))
+    # # on noncommand i.e message - echo the message on Telegram
+    # dispatcher.add_handler(MessageHandler(Filters.command, unknown))
 
     # log all errors
 

@@ -1,5 +1,5 @@
 # Telegram API framework core imports
-from telegram.ext import Dispatcher, CallbackContext
+from telegram.ext import CallbackContext, Dispatcher
 from telegram import Update
 # Helper methods import
 from utils.logger import get_logger
@@ -7,7 +7,7 @@ from utils.logger import get_logger
 # Telegram API framework handlers imports
 from telegram.ext import CommandHandler
 
-from main import splitwise_object
+from main import splitwise
 
 # Init logger
 logger = get_logger(__name__)
@@ -22,6 +22,6 @@ def connect(update: Update, context: CallbackContext):
     logger.info(update)
     logger.info(
         f"APP: {update.effective_user.username}: Connecting to splitwise account")
-    url, secret = splitwise_object.getAuthorizeURL()
+    url, secret = splitwise.getAuthorizeURL()
     context.user_data['secret'] = secret
     update.message.reply_text(url)

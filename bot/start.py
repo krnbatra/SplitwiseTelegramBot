@@ -7,9 +7,7 @@ from utils.logger import get_logger
 
 # Telegram API framework handlers imports
 from telegram.ext import CommandHandler
-
-from main import splitwise_object
-from main import OAUTH_TOKEN, OAUTH_TOKEN_SECRET
+from main import splitwise
 
 # Init logger
 logger = get_logger(__name__)
@@ -22,15 +20,16 @@ def init(dispatcher: Dispatcher):
 
 def start(update: Update, context: CallbackContext):
     try:
-        global OAUTH_TOKEN, OAUTH_TOKEN_SECRET
         tokens = context.args[0].split('-')
 
-        OAUTH_TOKEN, OAUTH_TOKEN_SECRET = tokens
-        access_token = splitwise_object.getAccessToken(
-            OAUTH_TOKEN, context.user_data['secret'], OAUTH_TOKEN_SECRET)
+        # OAUTH_TOKEN, OAUTH_TOKEN_SECRET = tokens
+        oauth_token, oauth_token_secret = tokens
+        access_token = splitwise.getAccessToken(
+            oauth_token, context.user_data['secret'], oauth_token_secret
+        )
         # dictionary with oauth_token and oauth_token_secret as keys,
         # these are the real values for login purposes
-        splitwise_object.setAccessToken(access_token)
+        splitwise.setAccessToken(access_token)
         logger.info(
             f'APP: {update.effective_user.username}: Splitwise account connected successfully')
         update.message.reply_text(
@@ -39,4 +38,4 @@ def start(update: Update, context: CallbackContext):
         logger.info(
             f'APP: {update.effective_user.username}: Started the conversation')
         update.message.reply_text(
-            f"APP: {update.effective_user.username}: Your splitwise account is not connected.Please connect your account first")
+            f"Your splitwise account is not connected. Please connect your account first")

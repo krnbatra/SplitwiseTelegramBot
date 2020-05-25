@@ -1,8 +1,6 @@
-HELP = 'help'
-LIST_EXPENSE = 'list_expense'
-SETTLE_EXPENESE = 'settle_expense'
-CREATE_EXPENSE = 'create_expense'
-GET_NOTIFICATIONS = 'get_notifications'
-START = 'start'
-CONNECT = 'connect'
-CANCEL = 'cancel'
+commands = {
+    'connect': 'Connects your Splitwise account',
+    'list_expense': 'List expenses from your Splitwise account',
+    'create_expense': 'Create new expense in your Splitwise account',
+    'settle_expense': 'Settle expenses in your Splitwise account'
+}
