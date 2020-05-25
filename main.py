@@ -2,19 +2,15 @@ import configurations.settings as settings
 import logging
 import os
 
-from emoji import emojize
 from functools import wraps
 from splitwise import Splitwise
 from splitwise.expense import Expense
 from splitwise.user import ExpenseUser
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ChatAction, ParseMode
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, ConversationHandler, MessageHandler, Filters
-from commands import HELP, LIST_EXPENSE, SETTLE_EXPENESE, CREATE_EXPENSE, GET_NOTIFICATIONS, START, CONNECT, CANCEL
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, ConversationHandler, Dispatcher, MessageHandler, Filters
+from importlib import import_module
 
-# Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-logger = logging.getLogger(__name__)
+import utils.logger as logger
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
@@ -26,50 +22,22 @@ SETTLE_WITH_FRIEND = 'settle_with_friend'
 CREATE_EXPENSE = 'create_expense'
 
 
-commands = {
-    CONNECT: 'Connects your Splitwise account',
-    LIST_EXPENSE: 'List expenses from your Splitwise account',
-    CREATE_EXPENSE: 'Create new expense in your Splitwise account',
-    SETTLE_EXPENESE: 'Settle expenses in your Splitwise account'
-}
-
 AMOUNT, TYPING_REPLY, DESCRIPTION, SETTLE_WITH, CONFIRM = range(5)
 
 
 OAUTH_TOKEN, OAUTH_TOKEN_SECRET = None, None
 
 
-def connect(update, context):
-    url, secret = splitwise_object.getAuthorizeURL()
-    context.user_data['secret'] = secret
-    update.message.reply_text(url)
+def load_handlers(dispatcher: Dispatcher):
+    """Load handlers from files in a 'bot' directory."""
+    base_path = os.path.join(os.path.dirname(__file__), 'bot')
+    files = os.listdir(base_path)
 
+    for file_name in files:
+        handler_module, _ = os.path.splitext(file_name)
 
-def start(update, context):
-    try:
-        global OAUTH_TOKEN, OAUTH_TOKEN_SECRET
-        tokens = context.args[0].split('-')
-        OAUTH_TOKEN = tokens[0]
-        OAUTH_TOKEN_SECRET = tokens[1]
-        access_token = splitwise_object.getAccessToken(
-            OAUTH_TOKEN, context.user_data['secret'], OAUTH_TOKEN_SECRET)
-        # dictionary with oauth_token and oauth_token_secret as keys,
-        logger.info(access_token)
-        # these are the real values for login purposes
-        splitwise_object.setAccessToken(access_token)
-        update.message.reply_text(
-            emojize("Splitwise account connected.\nNow manage your money effectively! :moneybag: ", use_aliases=True))
-    except IndexError:
-        update.message.reply_text(
-            "Your splitwise account is not connected.Please connect your account first")
-
-
-def help(update, context):
-    help_text = '<b>The following commands are available:</b>\n\n'
-    help_text += ''.join(
-        [f'<b>{command}:</b> <i>{commands[command]}</i>\n' for command in commands])
-    # send the generated help page
-    update.message.reply_text(help_text, parse_mode=ParseMode.HTML)
+        module = import_module(f'.{handler_module}', 'bot')
+        module.init(dispatcher)
 
 
 def send_typing_action(func):
@@ -346,11 +314,6 @@ def unknown(update, context):
     update.message.reply_text(text="Sorry, I didn't understand that command.")
 
 
-def error(update, context):
-    """Log Errors caused by Updates."""
-    logger.warning('Update "%s" caused error "%s"', update, context.error)
-
-
 def _get_conversation_handler(entry_points, states):
     conversation_handler = ConversationHandler(
         entry_points=entry_points,
@@ -363,11 +326,11 @@ def _get_conversation_handler(entry_points, states):
 
 
 def main():
+    logger.init_logger(f'logs/{settings.NAME}.log')
     updater = Updater(BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
 
-    dispatcher.add_handler(CommandHandler(CONNECT, connect))
-    dispatcher.add_handler(CommandHandler(START, start))
+    load_handlers(updater.dispatcher)
     dispatcher.add_handler(CommandHandler(HELP, help))
     dispatcher.add_handler(CommandHandler(LIST_EXPENSE, list_expense))
 
@@ -406,7 +369,6 @@ def main():
     dispatcher.add_handler(MessageHandler(Filters.command, unknown))
 
     # log all errors
-    dispatcher.add_error_handler(error)
 
     if settings.WEBHOOK:
         # signal.signal(signal.SIGINT, graceful_exit)

@@ -1,0 +1,28 @@
+2020-05-25 12:05:48,471 - telegram.ext.updater - INFO - Received signal 2 (SIGINT), stopping...
+2020-05-25 12:06:19,325 - telegram.ext.dispatcher - ERROR - An error was raised while processing the update and an uncaught error was raised while handling the error with an error_handler
+Traceback (most recent call last):
+  File "/Users/karanbatra/.local/share/virtualenvs/SplitwiseTelegramBot-e19XaNMs/lib/python3.7/site-packages/telegram/ext/dispatcher.py", line 343, in process_update
+    handler.handle_update(update, self, check, context)
+  File "/Users/karanbatra/.local/share/virtualenvs/SplitwiseTelegramBot-e19XaNMs/lib/python3.7/site-packages/telegram/ext/handler.py", line 119, in handle_update
+    return self.callback(update, context)
+  File "/Users/karanbatra/Desktop/SplitwiseTelegramBot/bot/connect.py", line 24, in connect
+    f"{update['chat']['username']}: Connecting to splitwise account")
+  File "/Users/karanbatra/.local/share/virtualenvs/SplitwiseTelegramBot-e19XaNMs/lib/python3.7/site-packages/telegram/base.py", line 36, in __getitem__
+    return self.__dict__[item]
+KeyError: 'chat'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/karanbatra/.local/share/virtualenvs/SplitwiseTelegramBot-e19XaNMs/lib/python3.7/site-packages/telegram/ext/dispatcher.py", line 356, in process_update
+    self.dispatch_error(update, e)
+  File "/Users/karanbatra/.local/share/virtualenvs/SplitwiseTelegramBot-e19XaNMs/lib/python3.7/site-packages/telegram/ext/dispatcher.py", line 525, in dispatch_error
+    callback(update, CallbackContext.from_error(update, error, self))
+  File "main.py", line 348, in error
+    logger.warning('Update "%s" caused error "%s"', update, context.error)
+AttributeError: module 'utils.logger' has no attribute 'warning'
+2020-05-25 12:07:10,818 - telegram.ext.updater - INFO - Received signal 2 (SIGINT), stopping...
+2020-05-25 12:15:31,273 - telegram.ext.updater - INFO - Received signal 2 (SIGINT), stopping...
+2020-05-25 12:15:55,153 - bot.connect - INFO - {'update_id': 87086804, 'message': {'message_id': 694, 'date': 1590389154, 'chat': {'id': 353979697, 'type': 'private', 'username': 'krnbatra', 'first_name': 'Karan'}, 'text': '/connect', 'entities': [{'type': 'bot_command', 'offset': 0, 'length': 8}], 'caption_entities': [], 'photo': [], 'new_chat_members': [], 'new_chat_photo': [], 'delete_chat_photo': False, 'group_chat_created': False, 'supergroup_chat_created': False, 'channel_chat_created': False, 'from': {'id': 353979697, 'first_name': 'Karan', 'is_bot': False, 'username': 'krnbatra', 'language_code': 'en'}}, '_effective_user': {'id': 353979697, 'first_name': 'Karan', 'is_bot': False, 'username': 'krnbatra', 'language_code': 'en'}, '_effective_chat': {'id': 353979697, 'type': 'private', 'username': 'krnbatra', 'first_name': 'Karan'}, '_effective_message': {'message_id': 694, 'date': 1590389154, 'chat': {'id': 353979697, 'type': 'private', 'username': 'krnbatra', 'first_name': 'Karan'}, 'text': '/connect', 'entities': [{'type': 'bot_command', 'offset': 0, 'length': 8}], 'caption_entities': [], 'photo': [], 'new_chat_members': [], 'new_chat_photo': [], 'delete_chat_photo': False, 'group_chat_created': False, 'supergroup_chat_created': False, 'channel_chat_created': False, 'from': {'id': 353979697, 'first_name': 'Karan', 'is_bot': False, 'username': 'krnbatra', 'language_code': 'en'}}}
+2020-05-25 12:15:55,153 - bot.connect - INFO - krnbatra: Connecting to splitwise account
+2020-05-25 12:16:17,832 - telegram.ext.updater - INFO - Received signal 2 (SIGINT), stopping...
