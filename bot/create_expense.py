@@ -63,17 +63,23 @@ def init(dispatcher: Dispatcher):
 
 
 def create_expense(update, context):
-    logger.info(
-        f"APP: {update.effective_user.username}: Starting the create expense method")
-    friends = splitwise.getFriends()
-    reply_markup = InlineKeyboardMarkup(
-        get_keyboard_layout(splitwise, friends, column_size=3))
+    try:
+        logger.info(
+            f"APP: {update.effective_user.username}: Starting the create expense method")
+        friends = splitwise.getFriends()
+        reply_markup = InlineKeyboardMarkup(
+            get_keyboard_layout(splitwise, friends, column_size=3))
 
-    update.message.reply_text(
-        'Create new expense with',
-        reply_markup=reply_markup
-    )
-    return TAKE_INPUT
+        update.message.reply_text(
+            'Create new expense with',
+            reply_markup=reply_markup
+        )
+        return TAKE_INPUT
+    except:
+        logger.info(
+            f"APP: {update.effective_user.username}: Splitwise account not connected")
+        update.message.reply_text(
+            "Your splitwise account is not connected. Please connect your account first! ")
 
 
 def take_input(update, context):

@@ -18,8 +18,14 @@ def init(dispatcher: Dispatcher):
 
 
 def connect(update: Update, context: CallbackContext):
-    logger.info(
-        f"APP: {update.effective_user.username}: Connecting to splitwise account")
-    url, secret = splitwise.getAuthorizeURL()
-    context.user_data['secret'] = secret
-    update.message.reply_text(url)
+    try:
+        logger.info(
+            f"APP: {update.effective_user.username}: Connecting to splitwise account")
+        url, secret = splitwise.getAuthorizeURL()
+        context.user_data['secret'] = secret
+        update.message.reply_text(url)
+    except:
+        logger.info(
+            f"APP: {update.effective_user.username}: Splitwise account not connected")
+        update.message.reply_text(
+            "Your splitwise account is not connected. Please connect your account first")

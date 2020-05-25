@@ -38,4 +38,10 @@ def start(update: Update, context: CallbackContext):
         logger.info(
             f'APP: {update.effective_user.username}: Started the conversation')
         update.message.reply_text(
-            f"Your splitwise account is not connected. Please connect your account first")
+            """
+Welcome to Splitwize Bot 🤖!
+I'll be managing your Splitwise account.
+Run the /help command to check what all things I can do.
+Run /connect command to connect your Splitwise account.
+            """
+        )

@@ -40,9 +40,6 @@ def main():
 
     # # dispatcher.add_handler(CommandHandler(GET_NOTIFICATIONS, get_notifications_callback))
 
-    # # on noncommand i.e message - echo the message on Telegram
-    # dispatcher.add_handler(MessageHandler(Filters.command, unknown))
-
     if settings.WEBHOOK:
         # signal.signal(signal.SIGINT, graceful_exit)
         updater.start_webhook(**settings.WEBHOOK_OPTIONS)

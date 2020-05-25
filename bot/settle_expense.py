@@ -47,19 +47,25 @@ def init(dispatcher: Dispatcher):
 
 
 def settle_expense(update, context):
-    logger.info(
-        f"APP: {update.effective_user.username}: Starting settle expense")
-    friends_with_expenses = splitwise.get_friends_with_expenses()
-    borrowed_friends = [friend for friend in friends_with_expenses if float(
-        friend.getBalances()[0].getAmount()) < 0]
-    reply_markup = InlineKeyboardMarkup(
-        get_keyboard_layout(splitwise,  borrowed_friends))
+    try:
+        logger.info(
+            f"APP: {update.effective_user.username}: Starting settle expense")
+        friends_with_expenses = splitwise.get_friends_with_expenses()
+        borrowed_friends = [friend for friend in friends_with_expenses if float(
+            friend.getBalances()[0].getAmount()) < 0]
+        reply_markup = InlineKeyboardMarkup(
+            get_keyboard_layout(splitwise,  borrowed_friends))
 
-    update.message.reply_text(
-        'Settle with',
-        reply_markup=reply_markup
-    )
-    return TAKE_FRIEND_INPUT
+        update.message.reply_text(
+            'Settle with',
+            reply_markup=reply_markup
+        )
+        return TAKE_FRIEND_INPUT
+    except:
+        logger.info(
+            f"APP: {update.effective_user.username}: Splitwise account not connected")
+        update.message.reply_text(
+            "Your splitwise account is not connected. Please connect your account first! ")
 
 
 def take_friend_input(update, context):
