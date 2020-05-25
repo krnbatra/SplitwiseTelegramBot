@@ -1,0 +1,140 @@
+# Telegram API framework core imports
+from telegram.ext import Dispatcher, CallbackContext, MessageHandler, Filters, CallbackQueryHandler
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
+# Helper methods import
+from utils.logger import get_logger
+from utils.helper import get_keyboard_layout, confirm
+
+# Telegram API framework handlers imports
+from telegram.ext import CommandHandler, ConversationHandler
+
+from main import splitwise
+
+# Init logger
+logger = get_logger(__name__)
+
+TAKE_INPUT, TYPING_REPLY, CONFIRM = range(3)
+
+NEW_EXPENSE = 'new_expense'
+
+
+class Error(Exception):
+    """Base class for other exceptions"""
+    pass
+
+
+class InvalidAmountError(Error):
+    pass
+
+
+class InvalidDescriptionError(Error):
+    pass
+
+
+def cancel_expense(update, context):
+    query = update.callback_query
+    context.bot.edit_message_text(
+        chat_id=query.message.chat_id,
+        message_id=query.message.message_id,
+        text='No expense created'
+    )
+
+
+def init(dispatcher: Dispatcher):
+    """Provide handlers initialization."""
+    create_handler = ConversationHandler(
+        entry_points=[CommandHandler('create_expense', create_expense)],
+        states={
+            TAKE_INPUT: [CallbackQueryHandler(take_input)],
+            TYPING_REPLY: [MessageHandler(Filters.text,
+                                          received_input),
+                           ],
+            CONFIRM: [
+                CallbackQueryHandler(create_new_expense, pattern='^yes$'),
+                CallbackQueryHandler(cancel_expense, pattern='^no$')
+            ]
+        },
+        fallbacks=[CommandHandler('cancel', cancel_expense)],
+        allow_reentry=True,
+        conversation_timeout=180
+    )
+    dispatcher.add_handler(create_handler)
+
+
+def create_expense(update, context):
+    friends = splitwise.getFriends()
+    reply_markup = InlineKeyboardMarkup(
+        get_keyboard_layout(splitwise, friends, column_size=3))
+
+    update.message.reply_text(
+        'Create new expense with',
+        reply_markup=reply_markup
+    )
+    return TAKE_INPUT
+
+
+def take_input(update, context):
+    query = update.callback_query
+    friend_id = int(query.data)
+
+    _id_name_mapping = splitwise.get_id_name_mapping()
+    name = _id_name_mapping[friend_id]
+    context.user_data[NEW_EXPENSE] = [friend_id, name]
+
+    context.bot.edit_message_text(
+        chat_id=query.message.chat_id,
+        message_id=query.message.message_id,
+        text=f'Enter amount and description for expense with <b>{name}.</b>\n'
+             f'Use space to separate values.',
+        parse_mode=ParseMode.HTML
+    )
+    return TYPING_REPLY
+
+
+def received_input(update, context):
+    try:
+        amount, description = update.message.text.split(" ")
+        amount = float(amount)
+        if amount <= 0:
+            raise InvalidAmountError
+
+        if description is None or description == "":
+            raise InvalidDescriptionError
+
+        context.user_data[NEW_EXPENSE].extend([amount, description])
+        # context.user_data[NEW_EXPENSE].append(description)
+        id, name, amount, description = context.user_data[NEW_EXPENSE]
+        update.message.reply_text(f'Expense to be created with <b>{name}</b> with amount <b>₹{amount}</b>'
+                                  f' and description <b>{description}</b>', parse_mode=ParseMode.HTML)
+
+        text = 'Are you sure you want to proceed?'
+        confirm(update, context, text, True)
+        return CONFIRM
+    except (InvalidAmountError, TypeError) as e:
+        update.message.reply_text(
+            'Amount should be a positive value! Please input again.')
+        return TYPING_REPLY
+    except InvalidDescriptionError:
+        update.message.reply_text(
+            'Description not specified! Please input again.'
+        )
+        return TYPING_REPLY
+    except ValueError:
+        update.message.reply_text(
+            'Invalid input. Please input again.'
+        )
+        return TYPING_REPLY
+
+
+def create_new_expense(update, context):
+    query = update.callback_query
+    friend_id, name, amount, description = context.user_data[NEW_EXPENSE]
+
+    self_id = splitwise.getCurrentUser().getId()
+    splitwise.create_expense_object(self_id, friend_id, amount, description)
+
+    context.bot.edit_message_text(
+        chat_id=query.message.chat_id,
+        message_id=query.message.message_id,
+        text='New expense created!'
+    )
