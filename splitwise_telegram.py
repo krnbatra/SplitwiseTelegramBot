@@ -39,7 +39,7 @@ class SplitwiseTelegramBot(Splitwise):
         return friends_with_expenses
 
     def get_id_name_mapping(self):
-        friends = self.get_friends_with_expenses()
+        friends = self.getFriends()
         return {friend.getId(): f'{self.get_friend_full_name(friend)}' for friend in friends}
 
     def get_id_amount_mapping(self):
