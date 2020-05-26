@@ -2,7 +2,7 @@
 from telegram import InlineKeyboardMarkup
 # Telegram API framework handlers imports
 from telegram.ext import CommandHandler, ConversationHandler
-from telegram.ext import Dispatcher, CallbackQueryHandler
+from telegram.ext import Dispatcher, CallbackQueryHandler, Filters, MessageHandler
 
 from main import splitwise
 from utils.helper import get_keyboard_layout, confirm
@@ -17,7 +17,7 @@ TAKE_FRIEND_INPUT, CONFIRM = range(2)
 SETTLE_EXPENSE = 'settle_expense'
 
 
-def cancel_expense(update, context):
+def cancel_settle_expense(update, context):
     logger.info(
         f"APP: {update.effective_user.username}: Canceling settle expense")
     query = update.callback_query
@@ -36,14 +36,27 @@ def init(dispatcher: Dispatcher):
             TAKE_FRIEND_INPUT: [CallbackQueryHandler(take_friend_input)],
             CONFIRM: [
                 CallbackQueryHandler(create_settlement, pattern='^yes$'),
-                CallbackQueryHandler(cancel_expense, pattern='^no$')
+                CallbackQueryHandler(cancel_settle_expense, pattern='^no$')
             ]
         },
-        fallbacks=[CommandHandler('cancel', cancel_expense)],
+        fallbacks=[MessageHandler(Filters.command, done)],
         allow_reentry=True,
         conversation_timeout=180
     )
-    dispatcher.add_handler(settle_handler)
+    dispatcher.add_handler(settle_handler, 1)
+
+
+def done(update, context):
+    # user_data = context.user_data
+    # if 'choice' in user_data:
+    #     del user_data['choice']
+
+    # update.message.reply_text("Not creating create expenese any more"
+    #                           "{}"
+    #                           "Until next time!".format(facts_to_str(user_data)))
+
+    # user_data.clear()
+    return ConversationHandler.END
 
 
 def settle_expense(update, context):
@@ -61,7 +74,7 @@ def settle_expense(update, context):
             reply_markup=reply_markup
         )
         return TAKE_FRIEND_INPUT
-    except:
+    except Exception:
         logger.info(
             f"APP: {update.effective_user.username}: Splitwise account not connected")
         update.message.reply_text(

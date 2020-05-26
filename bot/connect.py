@@ -24,7 +24,7 @@ def connect(update: Update, context: CallbackContext):
         url, secret = splitwise.getAuthorizeURL()
         context.user_data['secret'] = secret
         update.message.reply_text(url)
-    except:
+    except Exception:
         logger.info(
             f"APP: {update.effective_user.username}: Splitwise account not connected")
         update.message.reply_text(

@@ -30,7 +30,7 @@ class InvalidDescriptionError(Error):
     pass
 
 
-def cancel_expense(update, context):
+def cancel_create_expense(update, context):
     logger.info(
         f"APP: {update.effective_user.username}: Canceling the create expense")
     query = update.callback_query
@@ -39,6 +39,19 @@ def cancel_expense(update, context):
         message_id=query.message.message_id,
         text='No expense created'
     )
+
+
+def done(update, context):
+    # user_data = context.user_data
+    # if 'choice' in user_data:
+    #     del user_data['choice']
+
+    # update.message.reply_text("Not creating create expenese any more"
+    #                           "{}"
+    #                           "Until next time!".format(facts_to_str(user_data)))
+
+    # user_data.clear()
+    return ConversationHandler.END
 
 
 def init(dispatcher: Dispatcher):
@@ -52,14 +65,14 @@ def init(dispatcher: Dispatcher):
                            ],
             CONFIRM: [
                 CallbackQueryHandler(create_new_expense, pattern='^yes$'),
-                CallbackQueryHandler(cancel_expense, pattern='^no$')
+                CallbackQueryHandler(cancel_create_expense, pattern='^no$')
             ]
         },
-        fallbacks=[CommandHandler('cancel', cancel_expense)],
+        fallbacks=[MessageHandler(Filters.command, done)],
         allow_reentry=True,
         conversation_timeout=180
     )
-    dispatcher.add_handler(create_handler)
+    dispatcher.add_handler(create_handler, 2)
 
 
 def create_expense(update, context):
@@ -75,7 +88,7 @@ def create_expense(update, context):
             reply_markup=reply_markup
         )
         return TAKE_INPUT
-    except:
+    except Exception:
         logger.info(
             f"APP: {update.effective_user.username}: Splitwise account not connected")
         update.message.reply_text(

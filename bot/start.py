@@ -45,3 +45,8 @@ Run the /help command to check what all things I can do.
 Run /connect command to connect your Splitwise account.
             """
         )
+    except Exception:
+        logger.info(
+            f"APP: {update.effective_user.username}: Splitwise account not connected")
+        update.message.reply_text(
+            "Your splitwise account is not connected. Please connect your account first")

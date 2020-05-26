@@ -47,7 +47,7 @@ def list_expense(update: Update, context: CallbackContext):
             f"APP: {update.effective_user.username}: Listing all expenses")
         output = get_all_expenses()
         update.message.reply_text(output, parse_mode=ParseMode.HTML)
-    except:
+    except Exception:
         logger.info(
             f"APP: {update.effective_user.username}: Splitwise account not connected")
         update.message.reply_text(
