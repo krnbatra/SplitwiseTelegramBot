@@ -8,13 +8,12 @@ from main import splitwise
 from utils.helper import get_keyboard_layout, confirm
 # Helper methods import
 from utils.logger import get_logger
+from utils.constants import ACCESS_TOKEN, SETTLE_EXPENSE
 
 # Init logger
 logger = get_logger(__name__)
 
 TAKE_FRIEND_INPUT, CONFIRM = range(2)
-
-SETTLE_EXPENSE = 'settle_expense'
 
 
 def cancel_settle_expense(update, context):
@@ -61,6 +60,9 @@ def done(update, context):
 
 def settle_expense(update, context):
     try:
+        if ACCESS_TOKEN not in context.user_data:
+            raise Exception
+        splitwise.setAccessToken(context.user_data[ACCESS_TOKEN])
         logger.info(
             f"APP: {update.effective_user.username}: Starting settle expense")
         friends_with_expenses = splitwise.get_friends_with_expenses()

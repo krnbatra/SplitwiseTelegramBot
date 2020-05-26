@@ -8,6 +8,7 @@ from telegram.ext import Dispatcher, CallbackContext
 from main import splitwise
 # Helper methods import
 from utils.logger import get_logger
+from utils.constants import ACCESS_TOKEN
 
 # Init logger
 logger = get_logger(__name__)
@@ -30,6 +31,7 @@ def start(update: Update, context: CallbackContext):
         # dictionary with oauth_token and oauth_token_secret as keys,
         # these are the real values for login purposes
         splitwise.setAccessToken(access_token)
+        context.user_data[ACCESS_TOKEN] = access_token
         logger.info(
             f'APP: {update.effective_user.username}: Splitwise account connected successfully')
         update.message.reply_text(

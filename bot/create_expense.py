@@ -8,13 +8,13 @@ from main import splitwise
 from utils.helper import get_keyboard_layout, confirm
 # Helper methods import
 from utils.logger import get_logger
+from utils.constants import ACCESS_TOKEN, NEW_EXPENSE
 
 # Init logger
 logger = get_logger(__name__)
 
 TAKE_INPUT, TYPING_REPLY, CONFIRM = range(3)
 
-NEW_EXPENSE = 'new_expense'
 
 
 class Error(Exception):
@@ -77,6 +77,10 @@ def init(dispatcher: Dispatcher):
 
 def create_expense(update, context):
     try:
+        if ACCESS_TOKEN not in context.user_data:
+            raise Exception
+        splitwise.setAccessToken(context.user_data[ACCESS_TOKEN])
+
         logger.info(
             f"APP: {update.effective_user.username}: Starting the create expense method")
         friends = splitwise.getFriends()

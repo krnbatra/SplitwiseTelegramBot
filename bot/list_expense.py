@@ -9,6 +9,7 @@ from telegram.ext import CommandHandler
 from main import splitwise
 # Helper methods import
 from utils.logger import get_logger
+from utils.constants import ACCESS_TOKEN
 
 # Init logger
 logger = get_logger(__name__)
@@ -43,6 +44,10 @@ def get_all_expenses():
 @send_typing_action
 def list_expense(update: Update, context: CallbackContext):
     try:
+        if ACCESS_TOKEN not in context.user_data:
+            raise Exception
+        splitwise.setAccessToken(context.user_data[ACCESS_TOKEN])
+
         logger.info(
             f"APP: {update.effective_user.username}: Listing all expenses")
         output = get_all_expenses()
