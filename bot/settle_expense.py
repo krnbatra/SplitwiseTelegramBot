@@ -5,10 +5,10 @@ from telegram.ext import CommandHandler, ConversationHandler
 from telegram.ext import Dispatcher, CallbackQueryHandler, Filters, MessageHandler
 
 from main import splitwise
-from utils.helper import get_keyboard_layout, confirm
+from utils.constants import ACCESS_TOKEN, SETTLE_EXPENSE
+from utils.helper import get_keyboard_layout, confirm, timeout, done, send_account_not_connected
 # Helper methods import
 from utils.logger import get_logger
-from utils.constants import ACCESS_TOKEN, SETTLE_EXPENSE
 
 # Init logger
 logger = get_logger(__name__)
@@ -36,26 +36,14 @@ def init(dispatcher: Dispatcher):
             CONFIRM: [
                 CallbackQueryHandler(create_settlement, pattern='^yes$'),
                 CallbackQueryHandler(cancel_settle_expense, pattern='^no$')
-            ]
+            ],
+            ConversationHandler.TIMEOUT: [MessageHandler(Filters.text | Filters.command, timeout)],
         },
-        fallbacks=[MessageHandler(Filters.command, done)],
+        fallbacks=[MessageHandler(Filters.text | Filters.command, done)],
         allow_reentry=True,
-        conversation_timeout=180
+        conversation_timeout=20
     )
     dispatcher.add_handler(settle_handler, 1)
-
-
-def done(update, context):
-    # user_data = context.user_data
-    # if 'choice' in user_data:
-    #     del user_data['choice']
-
-    # update.message.reply_text("Not creating create expenese any more"
-    #                           "{}"
-    #                           "Until next time!".format(facts_to_str(user_data)))
-
-    # user_data.clear()
-    return ConversationHandler.END
 
 
 def settle_expense(update, context):
@@ -77,10 +65,7 @@ def settle_expense(update, context):
         )
         return TAKE_FRIEND_INPUT
     except Exception:
-        logger.info(
-            f"APP: {update.effective_user.username}: Splitwise account not connected")
-        update.message.reply_text(
-            "Your splitwise account is not connected. Please connect your account first! ")
+        send_account_not_connected(update, context)
 
 
 def take_friend_input(update, context):

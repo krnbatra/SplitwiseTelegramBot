@@ -7,9 +7,10 @@ from telegram.ext import CallbackContext, Dispatcher
 from telegram.ext import CommandHandler
 
 from main import splitwise
+from utils.constants import ACCESS_TOKEN
+from utils.helper import send_account_not_connected
 # Helper methods import
 from utils.logger import get_logger
-from utils.constants import ACCESS_TOKEN
 
 # Init logger
 logger = get_logger(__name__)
@@ -53,7 +54,4 @@ def list_expense(update: Update, context: CallbackContext):
         output = get_all_expenses()
         update.message.reply_text(output, parse_mode=ParseMode.HTML)
     except Exception:
-        logger.info(
-            f"APP: {update.effective_user.username}: Splitwise account not connected")
-        update.message.reply_text(
-            "Your splitwise account is not connected. Please connect your account first! ")
+        send_account_not_connected(update, context)

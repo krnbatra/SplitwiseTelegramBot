@@ -1,4 +1,10 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ConversationHandler
+
+from utils.logger import get_logger
+
+# Init logger
+logger = get_logger(__name__)
 
 
 def get_keyboard_layout(splitwise, friends, column_size=2):
@@ -31,3 +37,26 @@ def confirm(update, context, text, new_message):
             text=text,
             reply_markup=reply_markup
         )
+
+
+def timeout(update, context):
+    context.bot.edit_message_text(
+        chat_id=update.message.chat_id,
+        message_id=update.message.message_id + 1,
+        text='You took longer than expected. Please run the query again.'
+    )
+
+
+def done(update, context):
+    context.bot.edit_message_text(chat_id=update.message.chat_id,
+                                  message_id=update.message.message_id - 1,
+                                  reply_markup=None,
+                                  text="Can't update previous command")
+    return ConversationHandler.END
+
+
+def send_account_not_connected(update, context):
+    logger.info(
+        f"APP: {update.effective_user.username}: Splitwise account not connected")
+    update.message.reply_text(
+        "Your splitwise account is not connected.\nPlease connect your account first! ")

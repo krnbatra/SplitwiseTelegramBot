@@ -1,14 +1,14 @@
 from emoji import emojize
-from telegram import Update
+from telegram import Update, ParseMode
 # Telegram API framework handlers imports
 from telegram.ext import CommandHandler
 # Telegram API framework core imports
 from telegram.ext import Dispatcher, CallbackContext
 
 from main import splitwise
+from utils.constants import ACCESS_TOKEN
 # Helper methods import
 from utils.logger import get_logger
-from utils.constants import ACCESS_TOKEN
 
 # Init logger
 logger = get_logger(__name__)
@@ -40,12 +40,13 @@ def start(update: Update, context: CallbackContext):
         logger.info(
             f'APP: {update.effective_user.username}: Started the conversation')
         update.message.reply_text(
-            """
+            f"""
+Hello <b>{update.effective_user.first_name}</b>!
 Welcome to Splitwize Bot 🤖!
 I'll be managing your Splitwise account.
-Run the /help command to check what all things I can do.
+Run /help command to check what all things I can do.
 Run /connect command to connect your Splitwise account.
-            """
+            """, parse_mode=ParseMode.HTML
         )
     except Exception:
         logger.info(

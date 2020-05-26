@@ -5,16 +5,15 @@ from telegram.ext import CommandHandler, ConversationHandler
 from telegram.ext import Dispatcher, MessageHandler, Filters, CallbackQueryHandler
 
 from main import splitwise
-from utils.helper import get_keyboard_layout, confirm
+from utils.constants import ACCESS_TOKEN, NEW_EXPENSE
+from utils.helper import get_keyboard_layout, confirm, timeout, done, send_account_not_connected
 # Helper methods import
 from utils.logger import get_logger
-from utils.constants import ACCESS_TOKEN, NEW_EXPENSE
 
 # Init logger
 logger = get_logger(__name__)
 
 TAKE_INPUT, TYPING_REPLY, CONFIRM = range(3)
-
 
 
 class Error(Exception):
@@ -41,19 +40,6 @@ def cancel_create_expense(update, context):
     )
 
 
-def done(update, context):
-    # user_data = context.user_data
-    # if 'choice' in user_data:
-    #     del user_data['choice']
-
-    # update.message.reply_text("Not creating create expenese any more"
-    #                           "{}"
-    #                           "Until next time!".format(facts_to_str(user_data)))
-
-    # user_data.clear()
-    return ConversationHandler.END
-
-
 def init(dispatcher: Dispatcher):
     """Provide handlers initialization."""
     create_handler = ConversationHandler(
@@ -66,11 +52,12 @@ def init(dispatcher: Dispatcher):
             CONFIRM: [
                 CallbackQueryHandler(create_new_expense, pattern='^yes$'),
                 CallbackQueryHandler(cancel_create_expense, pattern='^no$')
-            ]
+            ],
+            ConversationHandler.TIMEOUT: [MessageHandler(Filters.text | Filters.command, timeout)],
         },
         fallbacks=[MessageHandler(Filters.command, done)],
         allow_reentry=True,
-        conversation_timeout=180
+        conversation_timeout=20
     )
     dispatcher.add_handler(create_handler, 2)
 
@@ -93,10 +80,7 @@ def create_expense(update, context):
         )
         return TAKE_INPUT
     except Exception:
-        logger.info(
-            f"APP: {update.effective_user.username}: Splitwise account not connected")
-        update.message.reply_text(
-            "Your splitwise account is not connected. Please connect your account first! ")
+        send_account_not_connected(update, context)
 
 
 def take_input(update, context):
