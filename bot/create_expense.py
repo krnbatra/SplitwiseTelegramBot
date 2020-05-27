@@ -1,13 +1,13 @@
 # Telegram API framework core imports
 from telegram import InlineKeyboardMarkup, ParseMode
 # Telegram API framework handlers imports
-from telegram.ext import CommandHandler, ConversationHandler
-from telegram.ext import Dispatcher, MessageHandler, Filters, CallbackQueryHandler
+from telegram.ext import CommandHandler, ConversationHandler, MessageHandler
+from telegram.ext import Dispatcher, Filters, CallbackQueryHandler
 
 from main import splitwise
-from utils.constants import ACCESS_TOKEN, NEW_EXPENSE
-from utils.helper import get_keyboard_layout, confirm, timeout, done, send_account_not_connected
 # Helper methods import
+from utils.constants import ACCESS_TOKEN, NEW_EXPENSE, STATE_COMPLETE
+from utils.helper import get_keyboard_layout, confirm, timeout, done, send_account_not_connected
 from utils.logger import get_logger
 
 # Init logger
@@ -32,7 +32,9 @@ class InvalidDescriptionError(Error):
 def cancel_create_expense(update, context):
     logger.info(
         f"APP: {update.effective_user.username}: Canceling the create expense")
+
     query = update.callback_query
+    context.user_data[STATE_COMPLETE] = True
     context.bot.edit_message_text(
         chat_id=query.message.chat_id,
         message_id=query.message.message_id,
@@ -57,7 +59,7 @@ def init(dispatcher: Dispatcher):
         },
         fallbacks=[MessageHandler(Filters.command, done)],
         allow_reentry=True,
-        conversation_timeout=20
+        conversation_timeout=30
     )
     dispatcher.add_handler(create_handler, 2)
 
@@ -70,6 +72,7 @@ def create_expense(update, context):
 
         logger.info(
             f"APP: {update.effective_user.username}: Starting the create expense method")
+
         friends = splitwise.getFriends()
         reply_markup = InlineKeyboardMarkup(
             get_keyboard_layout(splitwise, friends, column_size=3))
@@ -86,6 +89,7 @@ def create_expense(update, context):
 def take_input(update, context):
     logger.info(
         f"APP: {update.effective_user.username}: Taking amount and description input")
+
     query = update.callback_query
     friend_id = int(query.data)
 
@@ -105,17 +109,21 @@ def take_input(update, context):
 
 def received_input(update, context):
     try:
+        query = update.callback_query
+
         amount, description = update.message.text.split(" ")
         amount = float(amount)
+
         if amount <= 0:
             raise InvalidAmountError
 
         if description is None or description == "":
             raise InvalidDescriptionError
+
         logger.info(
             f"APP: {update.effective_user.username}: Input received correctly")
+
         context.user_data[NEW_EXPENSE].extend([amount, description])
-        # context.user_data[NEW_EXPENSE].append(description)
         id, name, amount, description = context.user_data[NEW_EXPENSE]
         update.message.reply_text(f'Expense to be created with <b>{name}</b> with amount <b>₹{amount}</b>'
                                   f' and description <b>{description}</b>', parse_mode=ParseMode.HTML)
@@ -123,23 +131,29 @@ def received_input(update, context):
         text = 'Are you sure you want to proceed?'
         confirm(update, context, text, True)
         return CONFIRM
+
     except (InvalidAmountError, TypeError) as e:
         logger.info(
             f"APP: {update.effective_user.username}: Invalid amount")
+
         update.message.reply_text(
             'Amount should be a positive value! Please input again.')
         return TYPING_REPLY
+
     except InvalidDescriptionError:
         logger.info(
             f"APP: {update.effective_user.username}: Invalid description")
+
         update.message.reply_text(
             'Description not specified! Please input again.'
         )
         return TYPING_REPLY
+
     except ValueError:
         # when one of amount and description is not specified
         logger.info(
             f"APP: {update.effective_user.username}: Invalid input")
+
         update.message.reply_text(
             'Invalid input. Please input again.'
         )
@@ -149,12 +163,13 @@ def received_input(update, context):
 def create_new_expense(update, context):
     logger.info(
         f"APP: {update.effective_user.username}: Creating new expense!")
+
     query = update.callback_query
     friend_id, name, amount, description = context.user_data[NEW_EXPENSE]
 
     self_id = splitwise.getCurrentUser().getId()
     splitwise.create_expense_object(self_id, friend_id, amount, description)
-
+    context.user_data[STATE_COMPLETE] = True
     context.bot.edit_message_text(
         chat_id=query.message.chat_id,
         message_id=query.message.message_id,

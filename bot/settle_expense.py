@@ -5,7 +5,7 @@ from telegram.ext import CommandHandler, ConversationHandler
 from telegram.ext import Dispatcher, CallbackQueryHandler, Filters, MessageHandler
 
 from main import splitwise
-from utils.constants import ACCESS_TOKEN, SETTLE_EXPENSE
+from utils.constants import ACCESS_TOKEN, SETTLE_EXPENSE, STATE_COMPLETE
 from utils.helper import get_keyboard_layout, confirm, timeout, done, send_account_not_connected
 # Helper methods import
 from utils.logger import get_logger
@@ -20,6 +20,7 @@ def cancel_settle_expense(update, context):
     logger.info(
         f"APP: {update.effective_user.username}: Canceling settle expense")
     query = update.callback_query
+    context.user_data[STATE_COMPLETE] = True
     context.bot.edit_message_text(
         chat_id=query.message.chat_id,
         message_id=query.message.message_id,
@@ -41,7 +42,7 @@ def init(dispatcher: Dispatcher):
         },
         fallbacks=[MessageHandler(Filters.text | Filters.command, done)],
         allow_reentry=True,
-        conversation_timeout=20
+        conversation_timeout=30
     )
     dispatcher.add_handler(settle_handler, 1)
 
@@ -98,7 +99,7 @@ def create_settlement(update, context):
     splitwise.create_expense_object(
         self_id, friend_id, amount, 'Settling the expense'
     )
-
+    context.user_data[STATE_COMPLETE] = True
     context.bot.edit_message_text(
         chat_id=query.message.chat_id,
         message_id=query.message.message_id,

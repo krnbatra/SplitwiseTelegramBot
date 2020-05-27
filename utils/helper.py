@@ -1,6 +1,7 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ConversationHandler
 
+from utils.constants import STATE_COMPLETE
 from utils.logger import get_logger
 
 # Init logger
@@ -43,20 +44,24 @@ def timeout(update, context):
     context.bot.edit_message_text(
         chat_id=update.message.chat_id,
         message_id=update.message.message_id + 1,
-        text='You took longer than expected. Please run the query again.'
+        text='You took longer than expected. Please run the command again.'
     )
 
 
 def done(update, context):
+    if STATE_COMPLETE in context.user_data and context.user_data[STATE_COMPLETE]:
+        del context.user_data[STATE_COMPLETE]
+        return ConversationHandler.END
     context.bot.edit_message_text(chat_id=update.message.chat_id,
                                   message_id=update.message.message_id - 1,
                                   reply_markup=None,
-                                  text="Can't update previous command")
+                                  text="Can not update previous command")
     return ConversationHandler.END
 
 
 def send_account_not_connected(update, context):
     logger.info(
         f"APP: {update.effective_user.username}: Splitwise account not connected")
+
     update.message.reply_text(
         "Your splitwise account is not connected.\nPlease connect your account first! ")
