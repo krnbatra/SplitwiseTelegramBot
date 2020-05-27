@@ -43,7 +43,8 @@ def main():
     if settings.WEBHOOK:
         # signal.signal(signal.SIGINT, graceful_exit)
         updater.start_webhook(**settings.WEBHOOK_OPTIONS)
-        updater.bot.set_webhook(url=settings.WEBHOOK_URL)
+        # updater.bot.set_webhook(url=settings.WEBHOOK_URL)
+        updater.bot.set_webhook(os.environ.get("APP_NAME") + BOT_TOKEN)
     else:
         updater.start_polling()
 
