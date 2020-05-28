@@ -20,3 +20,15 @@ def init_logger(logfile: str):
 def get_logger(name: str = None):
     """Provide the root logger or initialize new."""
     return logging.getLogger(name)
+
+
+def print_app_log(logger, update, message):
+    username = update.effective_user.username
+    name = update.effective_user.first_name
+
+    if username is not None:
+        name_details = f"@{username} {name}"
+    else:
+        name_details = f"{name}"
+    logger.info(
+        f"APP, {name_details}, {message}")

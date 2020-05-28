@@ -8,7 +8,7 @@ from main import splitwise
 # Helper methods import
 from utils.constants import ACCESS_TOKEN, NEW_EXPENSE, STATE_COMPLETE
 from utils.helper import send_typing_action, get_keyboard_layout, confirm, timeout, done, send_account_not_connected
-from utils.logger import get_logger
+from utils.logger import get_logger, print_app_log
 
 # Init logger
 logger = get_logger(__name__)
@@ -16,22 +16,18 @@ logger = get_logger(__name__)
 TAKE_INPUT, TYPING_REPLY, CONFIRM = range(3)
 
 
-class Error(Exception):
-    """Base class for other exceptions"""
-    pass
+class InvalidAmountError(ValueError):
+    def __init__(self, amount):
+        self.amount = amount
 
 
-class InvalidAmountError(Error):
-    pass
-
-
-class InvalidDescriptionError(Error):
-    pass
+class InvalidDescriptionError(Exception):
+    def __init__(self, description):
+        self.description = description
 
 
 def cancel_create_expense(update, context):
-    logger.info(
-        f"APP: {update.effective_user.username}: Canceling the create expense")
+    print_app_log(logger, update, "Canceling the create expense")
 
     query = update.callback_query
     context.user_data[STATE_COMPLETE] = True
@@ -70,8 +66,7 @@ def create_expense(update, context):
             raise Exception
         splitwise.setAccessToken(context.user_data[ACCESS_TOKEN])
 
-        logger.info(
-            f"APP: {update.effective_user.username}: Starting the create expense method")
+        print_app_log(logger, update, "Initializing create expense")
 
         friends = splitwise.getFriends()
         reply_markup = InlineKeyboardMarkup(
@@ -87,8 +82,8 @@ def create_expense(update, context):
 
 
 def take_input(update, context):
-    logger.info(
-        f"APP: {update.effective_user.username}: Taking amount and description input")
+    print_app_log(logger, update,
+                  "Waiting for user to enter input for creating expense")
 
     query = update.callback_query
     friend_id = int(query.data)
@@ -110,18 +105,20 @@ def take_input(update, context):
 def received_input(update, context):
     try:
         query = update.callback_query
-
         amount, description = update.message.text.split(" ")
-        amount = float(amount)
+        try:
+            amount = float(amount)
+        except ValueError as e:
+            raise InvalidAmountError(amount)
 
         if amount <= 0:
-            raise InvalidAmountError
+            raise InvalidAmountError(amount)
 
         if description is None or description == "":
-            raise InvalidDescriptionError
+            raise InvalidDescriptionError(description)
 
-        logger.info(
-            f"APP: {update.effective_user.username}: Input received correctly")
+        print_app_log(
+            logger, update, f"Input received correctly Amount: {amount}, Description: {description}")
 
         context.user_data[NEW_EXPENSE].extend([amount, description])
         id, name, amount, description = context.user_data[NEW_EXPENSE]
@@ -132,41 +129,43 @@ def received_input(update, context):
         confirm(update, context, text, True)
         return CONFIRM
 
-    except (InvalidAmountError, TypeError) as e:
-        logger.info(
-            f"APP: {update.effective_user.username}: Invalid amount")
+    except InvalidAmountError as e:
+        print_app_log(logger, update,
+                      f"Invalid Amount: {e.amount} entered in create expense")
 
         update.message.reply_text(
-            'Amount should be a positive value! Please input again.')
+            f"Invalid Amount: {e.amount} entered. Please input again.")
         return TYPING_REPLY
 
-    except InvalidDescriptionError:
-        logger.info(
-            f"APP: {update.effective_user.username}: Invalid description")
+    except InvalidDescriptionError as e:
+        print_app_log(logger, update,
+                      f"Invalid Description: {e.description} entered in create expense")
 
         update.message.reply_text(
-            'Description not specified! Please input again.'
+            f'Invalid Description: {e.description} entered in create expense. Please input again.'
         )
         return TYPING_REPLY
 
-    except ValueError:
-        # when one of amount and description is not specified
-        logger.info(
-            f"APP: {update.effective_user.username}: Invalid input")
+    except ValueError as e:
+        # when only one string is provided
+        print_app_log(logger, update,
+                      f"Invalid input")
 
         update.message.reply_text(
-            'Invalid input. Please input again.'
+            f'Invalid input. Please input again.\n\n'
+            f'Valid Format:\n'
+            f'Amount Description'
         )
         return TYPING_REPLY
 
 
 @send_typing_action
 def create_new_expense(update, context):
-    logger.info(
-        f"APP: {update.effective_user.username}: Creating new expense!")
-
     query = update.callback_query
     friend_id, name, amount, description = context.user_data[NEW_EXPENSE]
+
+    print_app_log(
+        logger, update, f"creating new expense with {name}, of amount {amount} and description {description}")
 
     self_id = splitwise.getCurrentUser().getId()
     splitwise.create_expense_object(self_id, friend_id, amount, description)

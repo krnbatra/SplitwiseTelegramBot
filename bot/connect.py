@@ -7,7 +7,7 @@ from telegram.ext import CommandHandler
 from main import splitwise
 # Helper methods import
 from utils.helper import send_account_not_connected
-from utils.logger import get_logger
+from utils.logger import get_logger, print_app_log
 
 # Init logger
 logger = get_logger(__name__)
@@ -20,8 +20,7 @@ def init(dispatcher: Dispatcher):
 
 def connect(update: Update, context: CallbackContext):
     try:
-        logger.info(
-            f"APP: {update.effective_user.username}: Connecting to splitwise account")
+        print_app_log(logger, update, "Connecting to splitwise account")
 
         url, secret = splitwise.getAuthorizeURL()
         context.user_data['secret'] = secret

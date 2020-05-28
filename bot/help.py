@@ -6,7 +6,7 @@ from telegram.ext import Dispatcher, CallbackContext
 
 from commands import commands
 # Helper methods import
-from utils.logger import get_logger
+from utils.logger import get_logger, print_app_log
 
 # Init logger
 logger = get_logger(__name__)
@@ -18,8 +18,8 @@ def init(dispatcher: Dispatcher):
 
 
 def help(update: Update, context: CallbackContext):
-    logger.info(
-        f"APP: {update.effective_user.username}: Running help command")
+    print_app_log(logger, update, "Running help command")
+
     help_text = '<b>The following commands are available:</b>\n\n'
     help_text += ''.join(
         [f'<b>{command}:</b> <i>{commands[command]}</i>\n' for command in commands])
