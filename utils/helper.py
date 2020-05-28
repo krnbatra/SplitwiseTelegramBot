@@ -1,4 +1,6 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from functools import wraps
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ChatAction
 from telegram.ext import ConversationHandler
 
 from utils.constants import STATE_COMPLETE
@@ -6,6 +8,18 @@ from utils.logger import get_logger
 
 # Init logger
 logger = get_logger(__name__)
+
+
+def send_typing_action(func):
+    """Sends typing action while processing func command."""
+
+    @wraps(func)
+    def command_func(update, context, *args, **kwargs):
+        context.bot.send_chat_action(
+            chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
+        return func(update, context, *args, **kwargs)
+
+    return command_func
 
 
 def get_keyboard_layout(splitwise, friends, column_size=2):

@@ -7,7 +7,7 @@ from telegram.ext import Dispatcher, Filters, CallbackQueryHandler
 from main import splitwise
 # Helper methods import
 from utils.constants import ACCESS_TOKEN, NEW_EXPENSE, STATE_COMPLETE
-from utils.helper import get_keyboard_layout, confirm, timeout, done, send_account_not_connected
+from utils.helper import send_typing_action, get_keyboard_layout, confirm, timeout, done, send_account_not_connected
 from utils.logger import get_logger
 
 # Init logger
@@ -160,6 +160,7 @@ def received_input(update, context):
         return TYPING_REPLY
 
 
+@send_typing_action
 def create_new_expense(update, context):
     logger.info(
         f"APP: {update.effective_user.username}: Creating new expense!")

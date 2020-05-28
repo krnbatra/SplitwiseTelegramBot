@@ -6,7 +6,7 @@ from telegram.ext import Dispatcher, CallbackQueryHandler, Filters, MessageHandl
 
 from main import splitwise
 from utils.constants import ACCESS_TOKEN, SETTLE_EXPENSE, STATE_COMPLETE
-from utils.helper import get_keyboard_layout, confirm, timeout, done, send_account_not_connected
+from utils.helper import send_typing_action, get_keyboard_layout, confirm, timeout, done, send_account_not_connected
 # Helper methods import
 from utils.logger import get_logger
 
@@ -88,6 +88,7 @@ def take_friend_input(update, context):
     return CONFIRM
 
 
+@send_typing_action
 def create_settlement(update, context):
     logger.info(
         f"APP: {update.effective_user.username}: Creating settle expense")
