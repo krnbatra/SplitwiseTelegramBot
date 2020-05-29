@@ -4,7 +4,9 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ChatAction
 from telegram.ext import ConversationHandler
 
 from utils.constants import STATE_COMPLETE
-from utils.logger import get_logger
+from utils.logger import get_logger, print_app_log
+
+from main import splitwise, redis
 
 # Init logger
 logger = get_logger(__name__)
@@ -79,3 +81,25 @@ def send_account_not_connected(update, context):
 
     update.message.reply_text(
         "Your splitwise account is not connected.\nPlease connect your account first! ")
+
+
+def is_spliwise_connected(update):
+    key = str(update.effective_user.id)
+
+    print_app_log(
+        logger, update, f"Command: {update.message.text} Checking for {key} in redis")
+
+    return redis.hexists(key, 'oauth_token') and redis.hexists(key, 'oauth_token_secret')
+
+
+def set_access_token(logger, update, context):
+    key = str(update.effective_user.id)
+
+    if is_spliwise_connected(update):
+        print_app_log(logger, update, f"Found user_id: {key} in redis")
+
+        splitwise.setAccessToken(redis.hgetall(key))
+    else:
+        print_app_log(logger, update,
+                      f"Not able to found user_id: {key} in redis")
+        raise Exception

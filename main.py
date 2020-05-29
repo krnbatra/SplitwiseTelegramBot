@@ -1,4 +1,6 @@
 import os
+import redis
+
 from importlib import import_module
 
 from telegram.ext import Updater, Dispatcher
@@ -10,6 +12,9 @@ from splitwise_telegram import SplitwiseTelegramBot
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
 splitwise = SplitwiseTelegramBot()
+redis = redis.from_url(os.environ.get("REDIS_URL"), decode_responses=True)
+# r = redis.Redis(host='localhost', port=6379, db=0)
+# redis://h:p895874526617dd19e8163ef5bba8f2f3ee66e85664635528765b0eeca4cc1010@ec2-34-198-97-40.compute-1.amazonaws.com:16339
 
 
 def load_handlers(dispatcher: Dispatcher):

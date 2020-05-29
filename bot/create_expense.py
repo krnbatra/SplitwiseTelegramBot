@@ -7,7 +7,7 @@ from telegram.ext import Dispatcher, Filters, CallbackQueryHandler
 from main import splitwise
 # Helper methods import
 from utils.constants import ACCESS_TOKEN, NEW_EXPENSE, STATE_COMPLETE
-from utils.helper import send_typing_action, get_keyboard_layout, confirm, timeout, done, send_account_not_connected
+from utils.helper import send_typing_action, get_keyboard_layout, confirm, timeout, done, send_account_not_connected, set_access_token
 from utils.logger import get_logger, print_app_log
 
 # Init logger
@@ -62,9 +62,7 @@ def init(dispatcher: Dispatcher):
 
 def create_expense(update, context):
     try:
-        if ACCESS_TOKEN not in context.user_data:
-            raise Exception
-        splitwise.setAccessToken(context.user_data[ACCESS_TOKEN])
+        set_access_token(logger, update, context)
 
         print_app_log(logger, update, "Initializing create expense")
 

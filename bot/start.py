@@ -5,7 +5,7 @@ from telegram.ext import CommandHandler
 # Telegram API framework core imports
 from telegram.ext import Dispatcher, CallbackContext
 
-from main import splitwise
+from main import splitwise, redis
 from utils.constants import ACCESS_TOKEN
 from utils.helper import send_account_not_connected
 # Helper methods import
@@ -24,7 +24,6 @@ def start(update: Update, context: CallbackContext):
     try:
         tokens = context.args[0].split('-')
 
-        # OAUTH_TOKEN, OAUTH_TOKEN_SECRET = tokens
         oauth_token, oauth_token_secret = tokens
         access_token = splitwise.getAccessToken(
             oauth_token, context.user_data['secret'], oauth_token_secret
@@ -32,7 +31,13 @@ def start(update: Update, context: CallbackContext):
         # dictionary with oauth_token and oauth_token_secret as keys,
         # these are the real values for login purposes
         splitwise.setAccessToken(access_token)
-        context.user_data[ACCESS_TOKEN] = access_token
+
+        key = str(update.effective_user.id)
+        value = access_token
+        redis.hmset(key, value)
+
+        print_app_log(
+            logger, update, f"Storing user_id: {key} and access_token: {value} in redis")
 
         print_app_log(logger, update,
                       "Splitwise account connected successfully")

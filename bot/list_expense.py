@@ -4,9 +4,9 @@ from telegram.ext import CallbackContext, Dispatcher
 # Telegram API framework handlers imports
 from telegram.ext import CommandHandler
 
-from main import splitwise
+from main import splitwise, redis
 from utils.constants import ACCESS_TOKEN
-from utils.helper import send_typing_action, send_account_not_connected
+from utils.helper import send_typing_action, send_account_not_connected, set_access_token
 # Helper methods import
 from utils.logger import get_logger, print_app_log
 
@@ -32,9 +32,7 @@ def get_all_expenses(update):
 @send_typing_action
 def list_expense(update: Update, context: CallbackContext):
     try:
-        if ACCESS_TOKEN not in context.user_data:
-            raise Exception
-        splitwise.setAccessToken(context.user_data[ACCESS_TOKEN])
+        set_access_token(logger, update, context)
 
         print_app_log(logger, update, "Listing all expenses")
 
