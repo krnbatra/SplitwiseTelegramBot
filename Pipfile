@@ -11,6 +11,7 @@ autopep8 = "*"
 splitwise = "*"
 python-telegram-bot = "*"
 emoji = "*"
+redis = "*"
 
 [requires]
 python_version = "3.7"
