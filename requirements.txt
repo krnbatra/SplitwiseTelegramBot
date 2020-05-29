@@ -15,6 +15,7 @@ pycodestyle==2.6.0
 pycparser==2.20
 pylint==2.5.2
 python-telegram-bot==12.7
+redis==3.5.2
 six==1.15.0
 splitwise==1.1.0
 toml==0.10.1
