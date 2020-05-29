@@ -1,4 +1,6 @@
-## A telegram bot 🤖 for managing Splitwise application from within Telegram.
+# Welcome to SplitwiseTelegramBot 👋
+
+### A telegram bot  for managing Splitwise application from within Telegram.
 
 The current version supports the following commands.
    1. **connect**: Connects your Splitwise account
@@ -6,19 +8,21 @@ The current version supports the following commands.
    3. **create_expense**: Creates new expense in your Splitwise account
    4. **settle_expense**: Settles expense in your Splitwise account
    
-Access the bot using [SplitwizeBot](https://telegram.me/SplitwizeBot).
+### 🤖 [SplitwizeBot](https://telegram.me/SplitwizeBot).
+
 
 Use [/connect]() to connect to your Splitwise account.
-   
-   
-### Contributing
 
-- Fork the repo
 
-- Uses pipenv as virutal environment
+## 🤝 Contributing
 
-- Dependencies
-    * [Splitwise](https://github.com/namaggarwal/splitwise)
-    * [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot)
+Contributions, issues and feature requests are welcome!
 
-- Heroku for deployment
+Feel free to check [issues page](https://github.com/krnbatra/SplitwiseTelegramBot/issues). 
+
+[Check the contribution guide]()
+
+## Show your support
+
+Give a ⭐️ if this you liked this project!
+
