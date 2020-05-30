@@ -2,9 +2,9 @@
 
 #### A telegram bot  for managing Splitwise application from within Telegram.
 
-<p align="center">
-   🤖 <a href="https://telegram.me/SplitwizeBot">SplitwizeBot</a>
-</p>
+
+## 🤖 [SplitwizeBot](https://telegram.me/SplitwizeBot)
+
 
 ## What can this bot do?
 The current version supports the following commands.
