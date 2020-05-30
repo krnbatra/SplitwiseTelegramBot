@@ -1,12 +1,12 @@
 # SplitwiseTelegramBot
 
-### A telegram bot  for managing Splitwise application from within Telegram.
+#### A telegram bot  for managing Splitwise application from within Telegram.
 
 <p align="center">
    🤖 <a href="https://telegram.me/SplitwizeBot">SplitwizeBot</a>
 </p>
 
-### What can this bot do?
+## What can this bot do?
 The current version supports the following commands.
    1. **connect**: Connects your Splitwise account
    2. **list_expense**: List expenses from your Splitwise account
@@ -15,8 +15,8 @@ The current version supports the following commands.
    
 Use [/connect]() to connect to your Splitwise account.
 
-✨ Demo
-
+## ✨ Demo
+![](https://github.com/krnbatra/SplitwiseTelegramBot/blob/master/assets/demoSplitwise.gif)
 
 ## Author
    👤 Karan Deep Batra
@@ -35,3 +35,5 @@ Feel free to check [issues page](https://github.com/krnbatra/SplitwiseTelegramBo
 
 Give a ⭐️ if this you liked this project!
 
+## License
+This project is licensed under the MIT License - see the [LICENSE.md](https://github.com/krnbatra/SplitwiseTelegramBot/blob/master/LICENSE.md) file for details
