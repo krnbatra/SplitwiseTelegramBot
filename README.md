@@ -2,7 +2,9 @@
 
 ### A telegram bot  for managing Splitwise application from within Telegram.
 
-### Access the bot here -> 🤖 [SplitwizeBot](https://telegram.me/SplitwizeBot)
+<p align="center">
+   🤖 <a href="https://telegram.me/SplitwizeBot">SplitwizeBot</a>
+</p>
 
 ### What can this bot do?
 The current version supports the following commands.
@@ -16,6 +18,10 @@ Use [/connect]() to connect to your Splitwise account.
 ✨ Demo
 
 
+## Author
+   👤 Karan Deep Batra
+   * LinkedIn: [@krnbatra](https://www.linkedin.com/in/krnbatra/)
+   * Instagram: [@karandeepbatra](https://www.instagram.com/karandeepbatra/)
 
 ## 🤝 Contributing
 
