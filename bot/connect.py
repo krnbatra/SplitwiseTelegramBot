@@ -34,4 +34,5 @@ def connect(update: Update, context: CallbackContext):
 
         url, secret = splitwise.getAuthorizeURL()
         context.user_data['secret'] = secret
+        update.message.reply_text("Please click on this link, and Authorize the application.")
         update.message.reply_text(url)

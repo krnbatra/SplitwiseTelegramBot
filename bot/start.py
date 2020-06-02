@@ -43,7 +43,7 @@ def start(update: Update, context: CallbackContext):
                       "Splitwise account connected successfully")
 
         update.message.reply_text(
-            emojize("Splitwise account connected.\nNow manage your money effectively! :moneybag: ", use_aliases=True))
+            emojize("Splitwise account connected successfully.\nNow manage your money effectively! :moneybag: ", use_aliases=True))
     except IndexError:
         print_app_log(logger, update, "Started the conversation")
 

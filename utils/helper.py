@@ -80,7 +80,8 @@ def send_account_not_connected(update, context):
         f"APP: {update.effective_user.username}: Splitwise account not connected")
 
     update.message.reply_text(
-        "Your splitwise account is not connected.\nPlease connect your account first! ")
+        f"Your splitwise account is not connected.\nPlease connect your account first!\n"
+        f"Run /connect command to connect to your Splitwise account.")
 
 
 def is_spliwise_connected(update):

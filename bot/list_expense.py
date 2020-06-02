@@ -37,6 +37,8 @@ def list_expense(update: Update, context: CallbackContext):
         print_app_log(logger, update, "Listing all expenses")
 
         output = get_all_expenses(update)
+
+        print_app_log(logger, update, "Listed all expenses")
         update.message.reply_text(output, parse_mode=ParseMode.HTML)
     except Exception:
         send_account_not_connected(update, context)
