@@ -1,12 +1,12 @@
 # SplitwiseTelegramBot
 
-### A telegram bot  for managing Splitwise application from within Telegram.
+#### A telegram bot  for managing Splitwise application from within Telegram.
 
-<p align="center">
-   🤖 <a href="https://telegram.me/SplitwizeBot">SplitwizeBot</a>
-</p>
 
-### What can this bot do?
+## 🤖 [SplitwizeBot](https://telegram.me/SplitwizeBot)
+
+
+## What can this bot do?
 The current version supports the following commands.
    1. **connect**: Connects your Splitwise account
    2. **list_expense**: List expenses from your Splitwise account
@@ -15,8 +15,34 @@ The current version supports the following commands.
    
 Use [/connect]() to connect to your Splitwise account.
 
-✨ Demo
+## ✨ Demo
+![](https://github.com/krnbatra/SplitwiseTelegramBot/blob/master/assets/demoSplitwise.gif)
 
+## Getting started
+
+### Setting up the local instance
+
+Install the dependencies using:
+```
+   pip install -r requirements.txt
+```
+
+Set up the value of environment variables
+```
+   * BOT_TOKEN = Ask @BotFather for this token
+   
+   Register your app on Splitwise to get the value of next 2 tokens
+   * CONSUMER_KEY
+   * CONSUMER_SECRET
+   
+   * REDIS_URL = 127.0.0.1:6379
+```
+Make value of WEBHOOK = False in [this](https://github.com/krnbatra/SplitwiseTelegramBot/blob/master/configurations/settings.py) file.
+
+Finally run 
+```
+   python main.py
+```
 
 ## Author
    👤 Karan Deep Batra
@@ -29,9 +55,10 @@ Contributions, issues and feature requests are welcome!
 
 Feel free to check [issues page](https://github.com/krnbatra/SplitwiseTelegramBot/issues). 
 
-[Check the contribution guide]()
 
 ## Show your support
 
 Give a ⭐️ if this you liked this project!
 
+## License
+This project is licensed under the MIT License - see the [LICENSE.md](https://github.com/krnbatra/SplitwiseTelegramBot/blob/master/LICENSE.md) file for details
