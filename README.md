@@ -58,7 +58,7 @@ Feel free to check [issues page](https://github.com/krnbatra/SplitwiseTelegramBo
 
 ## Show your support
 
-Give a ⭐️ if this you liked this project!
+Give a ⭐️ if you liked this project!
 
 
 <a href="https://www.producthunt.com/posts/splitwise-telegram-bot?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-splitwise-telegram-bot" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=204262&theme=light" alt="Splitwise Telegram Bot - Telegram Bot for managing your Splitwise account. | Product Hunt Embed" style="width: 250px; height: 54px;" width="250px" height="54px" /></a>
